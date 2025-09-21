@@ -1,0 +1,324 @@
+{% extends 'maps/base.html' %}
+{% load static %}
+
+{% block title %}Novo Projeto - GIS SaaS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="text-center mb-5">
+                <h1><i class="fas fa-plus-circle text-primary me-2"></i>Novo Projeto</h1>
+                <p class="text-muted">Crie um novo projeto de mapa em 3 etapas simples</p>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="step-item active" id="step-1-indicator">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Informações</div>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step-item" id="step-2-indicator">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Upload</div>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step-item" id="step-3-indicator">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Configuração</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 1: Project Information -->
+            <div class="step-content" id="step-1">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-info-circle me-2"></i>Informações do Projeto</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="project-form">
+                            <div class="mb-3">
+                                <label for="project-name" class="form-label">Nome do Projeto *</label>
+                                <input type="text" class="form-control" id="project-name" required 
+                                       placeholder="Ex: Mapa de Localização - Fazenda São João">
+                            </div>
+                            <div class="mb-3">
+                                <label for="project-description" class="form-label">Descrição</label>
+                                <textarea class="form-control" id="project-description" rows="3" 
+                                          placeholder="Descreva brevemente o objetivo deste mapa..."></textarea>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-primary" onclick="nextStep(2)">
+                                    Próximo <i class="fas fa-arrow-right ms-1"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: File Upload -->
+            <div class="step-content d-none" id="step-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-upload me-2"></i>Upload do Arquivo GIS</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Upload Area -->
+                        <div class="upload-area" id="upload-area">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="upload-text">
+                                Arraste e solte seu arquivo aqui
+                            </div>
+                            <div class="upload-hint">
+                                ou clique para selecionar
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    Formatos suportados: .shp, .kml, .kmz, .geojson, .gpx (máx. 50MB)
+                                </small>
+                            </div>
+                            <input type="file" id="file-input" class="d-none" 
+                                   accept=".shp,.kml,.kmz,.geojson,.gpx">
+                        </div>
+
+                        <!-- Upload Progress -->
+                        <div class="upload-progress" id="upload-progress">
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div class="text-center mt-2">
+                                <small id="upload-status">Enviando arquivo...</small>
+                            </div>
+                        </div>
+
+                        <!-- File Info -->
+                        <div class="file-info d-none" id="file-info">
+                            <div class="alert alert-success">
+                                <h6><i class="fas fa-check-circle me-2"></i>Arquivo enviado com sucesso!</h6>
+                                <div id="file-details"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary" onclick="previousStep(1)">
+                                <i class="fas fa-arrow-left me-1"></i> Anterior
+                            </button>
+                            <button type="button" class="btn btn-primary" id="next-to-config" onclick="nextStep(3)" disabled>
+                                Próximo <i class="fas fa-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Map Configuration -->
+            <div class="step-content d-none" id="step-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-cog me-2"></i>Configuração do Mapa</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="config-form">
+                            <!-- Layout Selection -->
+                            <div class="mb-4">
+                                <label class="form-label">Tipo de Layout</label>
+                                <div class="row" id="layout-options">
+                                    <!-- Layouts will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Map Title -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="map-title" class="form-label">Título do Mapa *</label>
+                                    <input type="text" class="form-control" id="map-title" required 
+                                           placeholder="Ex: Mapa de Localização">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="map-subtitle" class="form-label">Subtítulo</label>
+                                    <input type="text" class="form-control" id="map-subtitle" 
+                                           placeholder="Ex: Fazenda São João - MG">
+                                </div>
+                            </div>
+
+                            <!-- Colors -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="primary-color" class="form-label">Cor Primária</label>
+                                    <div class="color-picker-group">
+                                        <input type="color" class="color-picker" id="primary-color" value="#2E8B57">
+                                        <span class="ms-2">Cor da área de interesse</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="secondary-color" class="form-label">Cor Secundária</label>
+                                    <div class="color-picker-group">
+                                        <input type="color" class="color-picker" id="secondary-color" value="#4682B4">
+                                        <span class="ms-2">Cor das bordas e detalhes</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Map Elements -->
+                            <div class="mb-3">
+                                <label class="form-label">Elementos do Mapa</label>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="show-scale" checked>
+                                            <label class="form-check-label" for="show-scale">
+                                                Mostrar Escala
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="show-north" checked>
+                                            <label class="form-check-label" for="show-north">
+                                                Rosa dos Ventos
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="show-legend" checked>
+                                            <label class="form-check-label" for="show-legend">
+                                                Mostrar Legenda
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Logo Upload -->
+                            <div class="mb-3">
+                                <label for="logo-upload" class="form-label">Logo (Opcional)</label>
+                                <input type="file" class="form-control" id="logo-upload" accept="image/*">
+                                <small class="text-muted">Formatos: PNG, JPG, SVG (máx. 2MB)</small>
+                            </div>
+
+                            <!-- Additional Info -->
+                            <div class="mb-3">
+                                <label for="additional-info" class="form-label">Informações Adicionais</label>
+                                <textarea class="form-control" id="additional-info" rows="2" 
+                                          placeholder="Ex: Fonte dos dados, data de elaboração, etc."></textarea>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary" onclick="previousStep(2)">
+                                    <i class="fas fa-arrow-left me-1"></i> Anterior
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="createProject()">
+                                    <i class="fas fa-check me-1"></i> Criar Projeto
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.step-item.active .step-number {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.step-item.completed .step-number {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.step-item.active .step-label {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.step-line {
+    flex: 1;
+    height: 2px;
+    background-color: #e9ecef;
+    margin: 0 1rem;
+    margin-top: 20px;
+}
+
+.layout-option {
+    margin-bottom: 1rem;
+}
+
+.layout-option input[type="radio"] {
+    display: none;
+}
+
+.layout-option input[type="radio"]:checked + .layout-card {
+    border-color: var(--primary-color);
+    background-color: #f0f8f0;
+}
+
+.layout-card {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+    height: 100%;
+}
+
+.layout-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.layout-card .layout-icon {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/new-project.js' %}"></script>
+{% endblock %}
+

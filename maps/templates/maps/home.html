@@ -1,0 +1,200 @@
+{% extends 'maps/base.html' %}
+{% load static %}
+
+{% block title %}GIS SaaS - Geração Automática de Mapas{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="fade-in">Gere Mapas Profissionais Automaticamente</h1>
+                <p class="fade-in">Transforme seus arquivos GIS em mapas de localização profissionais em poucos cliques. Suporte para Shapefile, KML, KMZ e outros formatos.</p>
+                <div class="mt-4 fade-in">
+                    <a href="{% url 'new_project' %}" class="btn btn-light btn-lg me-3">
+                        <i class="fas fa-plus me-2"></i>Criar Projeto
+                    </a>
+                    <a href="{% url 'projects' %}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-folder me-2"></i>Ver Projetos
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <img src="{% static 'images/map-illustration.svg' %}" alt="Ilustração de Mapa" class="img-fluid" style="max-height: 400px;">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="container">
+    <div class="row">
+        <div class="col-12 text-center mb-5">
+            <h2>Como Funciona</h2>
+            <p class="text-muted">Processo simples em 3 passos</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="feature-card text-center slide-up">
+                <div class="icon">
+                    <i class="fas fa-upload"></i>
+                </div>
+                <h4>1. Upload do Arquivo</h4>
+                <p>Envie seus arquivos GIS (Shapefile, KML, KMZ) com a área de interesse que você deseja mapear.</p>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="feature-card text-center slide-up" style="animation-delay: 0.2s;">
+                <div class="icon">
+                    <i class="fas fa-palette"></i>
+                </div>
+                <h4>2. Personalização</h4>
+                <p>Escolha o layout, cores, adicione seu logo e configure as informações que aparecerão no mapa.</p>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="feature-card text-center slide-up" style="animation-delay: 0.4s;">
+                <div class="icon">
+                    <i class="fas fa-download"></i>
+                </div>
+                <h4>3. Download</h4>
+                <p>Baixe seu mapa profissional em formato PDF, PNG ou visualize interativamente em HTML.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Supported Formats Section -->
+<section class="container mt-5">
+    <div class="row">
+        <div class="col-12 text-center mb-4">
+            <h3>Formatos Suportados</h3>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-2 col-sm-4 col-6 text-center mb-3">
+            <div class="p-3">
+                <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
+                <p class="mb-0"><strong>Shapefile</strong></p>
+                <small class="text-muted">.shp, .shx, .dbf</small>
+            </div>
+        </div>
+        
+        <div class="col-md-2 col-sm-4 col-6 text-center mb-3">
+            <div class="p-3">
+                <i class="fas fa-map-marker-alt fa-2x text-primary mb-2"></i>
+                <p class="mb-0"><strong>KML</strong></p>
+                <small class="text-muted">.kml</small>
+            </div>
+        </div>
+        
+        <div class="col-md-2 col-sm-4 col-6 text-center mb-3">
+            <div class="p-3">
+                <i class="fas fa-archive fa-2x text-primary mb-2"></i>
+                <p class="mb-0"><strong>KMZ</strong></p>
+                <small class="text-muted">.kmz</small>
+            </div>
+        </div>
+        
+        <div class="col-md-2 col-sm-4 col-6 text-center mb-3">
+            <div class="p-3">
+                <i class="fas fa-code fa-2x text-primary mb-2"></i>
+                <p class="mb-0"><strong>GeoJSON</strong></p>
+                <small class="text-muted">.geojson</small>
+            </div>
+        </div>
+        
+        <div class="col-md-2 col-sm-4 col-6 text-center mb-3">
+            <div class="p-3">
+                <i class="fas fa-route fa-2x text-primary mb-2"></i>
+                <p class="mb-0"><strong>GPX</strong></p>
+                <small class="text-muted">.gpx</small>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Projects Section -->
+<section class="container mt-5">
+    <div class="row">
+        <div class="col-12 d-flex justify-content-between align-items-center mb-4">
+            <h3>Projetos Recentes</h3>
+            <a href="{% url 'projects' %}" class="btn btn-outline-primary">Ver Todos</a>
+        </div>
+    </div>
+    
+    <div class="row" id="recent-projects">
+        <!-- Projects will be loaded here via JavaScript -->
+        <div class="col-12 text-center">
+            <div class="loading"></div>
+            <p class="mt-2">Carregando projetos...</p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecentProjects();
+});
+
+async function loadRecentProjects() {
+    try {
+        const response = await axios.get('/api/projects/?limit=3');
+        const projects = response.data.results || response.data;
+        
+        const container = document.getElementById('recent-projects');
+        
+        if (projects.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center">
+                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Nenhum projeto encontrado. <a href="{% url 'new_project' %}">Crie seu primeiro projeto</a>!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = projects.map(project => `
+            <div class="col-md-4 mb-3">
+                <div class="project-card">
+                    <h5>${project.name}</h5>
+                    <p class="text-muted">${project.description || 'Sem descrição'}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar me-1"></i>
+                            ${new Date(project.created_at).toLocaleDateString('pt-BR')}
+                        </small>
+                        <span class="project-status status-active">
+                            ${project.uploaded_files_count} arquivo(s)
+                        </span>
+                    </div>
+                    <div class="mt-3">
+                        <a href="/project/${project.id}/" class="btn btn-sm btn-primary">
+                            <i class="fas fa-eye me-1"></i>Ver Projeto
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Erro ao carregar projetos:', error);
+        document.getElementById('recent-projects').innerHTML = `
+            <div class="col-12 text-center">
+                <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                <p class="text-muted">Erro ao carregar projetos recentes.</p>
+            </div>
+        `;
+    }
+}
+</script>
+{% endblock %}
+

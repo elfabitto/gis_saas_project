@@ -1,0 +1,346 @@
+{% extends 'maps/base.html' %}
+{% load static %}
+
+{% block title %}{{ project.name }} - GIS SaaS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'home' %}">Início</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'projects' %}">Projetos</a></li>
+                            <li class="breadcrumb-item active">{{ project.name }}</li>
+                        </ol>
+                    </nav>
+                    <h1><i class="fas fa-map me-2"></i>{{ project.name }}</h1>
+                    <p class="text-muted">{{ project.description|default:"Sem descrição" }}</p>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-cog me-2"></i>Ações
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="generateMapModal()">
+                            <i class="fas fa-map me-2"></i>Gerar Mapa
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'project_edit' project.id %}">
+                            <i class="fas fa-edit me-2"></i>Editar Projeto
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteProject()">
+                            <i class="fas fa-trash me-2"></i>Excluir Projeto
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Info Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
+                    <h5 class="card-title">{{ uploaded_files.count }}</h5>
+                    <p class="card-text">Arquivo(s) GIS</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-map fa-2x text-success mb-2"></i>
+                    <h5 class="card-title">{{ generated_maps.count }}</h5>
+                    <p class="card-text">Mapa(s) Gerado(s)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-calendar fa-2x text-info mb-2"></i>
+                    <h5 class="card-title">{{ project.created_at|date:"d/m/Y" }}</h5>
+                    <p class="card-text">Data de Criação</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                    <h5 class="card-title">{{ project.updated_at|date:"d/m/Y" }}</h5>
+                    <p class="card-text">Última Atualização</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Uploaded Files Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-upload me-2"></i>Arquivos GIS</h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="uploadNewFile()">
+                        <i class="fas fa-plus me-1"></i>Adicionar
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if uploaded_files %}
+                        <div class="list-group list-group-flush">
+                            {% for file in uploaded_files %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ file.original_filename }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-file me-1"></i>{{ file.file_type|upper }}
+                                        <i class="fas fa-weight-hanging ms-2 me-1"></i>{{ file.file_size|filesizeformat }}
+                                        <i class="fas fa-calendar ms-2 me-1"></i>{{ file.uploaded_at|date:"d/m/Y H:i" }}
+                                    </small>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="viewFileInfo('{{ file.id }}')">
+                                            <i class="fas fa-info me-2"></i>Informações
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ file.file.url }}" download>
+                                            <i class="fas fa-download me-2"></i>Download
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteFile('{{ file.id }}')">
+                                            <i class="fas fa-trash me-2"></i>Excluir
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-upload fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nenhum arquivo GIS enviado ainda.</p>
+                            <button class="btn btn-primary" onclick="uploadNewFile()">
+                                <i class="fas fa-plus me-2"></i>Enviar Primeiro Arquivo
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Generated Maps Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-map me-2"></i>Mapas Gerados</h5>
+                    <button class="btn btn-sm btn-outline-success" onclick="generateMapModal()" 
+                            {% if not uploaded_files %}disabled{% endif %}>
+                        <i class="fas fa-plus me-1"></i>Gerar Mapa
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if generated_maps %}
+                        <div class="list-group list-group-flush">
+                            {% for map in generated_maps %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">
+                                        Mapa {{ map.output_format|upper }}
+                                        <span class="badge bg-{{ map.status|yesno:'success,warning,danger' }} ms-2">
+                                            {{ map.get_status_display }}
+                                        </span>
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>{{ map.created_at|date:"d/m/Y H:i" }}
+                                        {% if map.output_file %}
+                                            <i class="fas fa-file ms-2 me-1"></i>{{ map.output_file.size|filesizeformat }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        {% if map.status == 'completed' and map.output_file %}
+                                            <li><a class="dropdown-item" href="{{ map.output_file.url }}" target="_blank">
+                                                <i class="fas fa-eye me-2"></i>Visualizar
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="{{ map.output_file.url }}" download>
+                                                <i class="fas fa-download me-2"></i>Download
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                        {% endif %}
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteMap('{{ map.id }}')">
+                                            <i class="fas fa-trash me-2"></i>Excluir
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-map fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nenhum mapa gerado ainda.</p>
+                            {% if uploaded_files %}
+                                <button class="btn btn-success" onclick="generateMapModal()">
+                                    <i class="fas fa-plus me-2"></i>Gerar Primeiro Mapa
+                                </button>
+                            {% else %}
+                                <p class="text-muted"><small>Envie um arquivo GIS primeiro para gerar mapas.</small></p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Configuration Section -->
+    {% if map_config %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-cog me-2"></i>Configuração do Mapa</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Informações Básicas</h6>
+                            <p><strong>Título:</strong> {{ map_config.title }}</p>
+                            {% if map_config.subtitle %}
+                                <p><strong>Subtítulo:</strong> {{ map_config.subtitle }}</p>
+                            {% endif %}
+                            <p><strong>Layout:</strong> {{ map_config.layout.name }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Personalização</h6>
+                            <p>
+                                <strong>Cores:</strong>
+                                <span class="badge" style="background-color: {{ map_config.primary_color }};">Primária</span>
+                                <span class="badge" style="background-color: {{ map_config.secondary_color }};">Secundária</span>
+                            </p>
+                            <p>
+                                <strong>Elementos:</strong>
+                                {% if map_config.show_scale %}<span class="badge bg-success">Escala</span>{% endif %}
+                                {% if map_config.show_north_arrow %}<span class="badge bg-success">Rosa dos Ventos</span>{% endif %}
+                                {% if map_config.show_legend %}<span class="badge bg-success">Legenda</span>{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% if map_config.additional_info %}
+                        <hr>
+                        <h6>Informações Adicionais</h6>
+                        <p>{{ map_config.additional_info }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Generate Map Modal -->
+<div class="modal fade" id="generateMapModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gerar Mapa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Escolha o formato de saída para o mapa:</p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="generateMap('html')">
+                        <i class="fas fa-globe me-2"></i>Mapa Interativo (HTML)
+                        <small class="d-block text-muted">Ideal para visualização online</small>
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="generateMap('png')">
+                        <i class="fas fa-image me-2"></i>Imagem de Alta Qualidade (PNG)
+                        <small class="d-block text-muted">Ideal para apresentações e impressão</small>
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="generateMap('pdf')">
+                        <i class="fas fa-file-pdf me-2"></i>Documento Profissional (PDF)
+                        <small class="d-block text-muted">Ideal para relatórios e documentos</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const projectId = '{{ project.id }}';
+
+function generateMapModal() {
+    const modal = new bootstrap.Modal(document.getElementById('generateMapModal'));
+    modal.show();
+}
+
+async function generateMap(format) {
+    try {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('generateMapModal'));
+        modal.hide();
+        
+        GISSaaS.showAlert(`Gerando mapa ${format.toUpperCase()}... Isso pode levar alguns minutos.`, 'info');
+        
+        const result = await GISSaaS.generateMap(projectId, format);
+        
+        GISSaaS.showAlert('Mapa gerado com sucesso!', 'success');
+        
+        // Recarregar página para mostrar novo mapa
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error generating map:', error);
+        GISSaaS.showAlert(`Erro ao gerar mapa: ${error.message}`, 'danger');
+    }
+}
+
+function uploadNewFile() {
+    // TODO: Implementar modal de upload
+    GISSaaS.showAlert('Funcionalidade de upload adicional em desenvolvimento', 'info');
+}
+
+function viewFileInfo(fileId) {
+    // TODO: Implementar modal de informações do arquivo
+    GISSaaS.showAlert('Funcionalidade de informações do arquivo em desenvolvimento', 'info');
+}
+
+function deleteFile(fileId) {
+    if (confirm('Tem certeza que deseja excluir este arquivo?')) {
+        // TODO: Implementar exclusão de arquivo
+        GISSaaS.showAlert('Funcionalidade de exclusão de arquivo em desenvolvimento', 'info');
+    }
+}
+
+function deleteMap(mapId) {
+    if (confirm('Tem certeza que deseja excluir este mapa?')) {
+        // TODO: Implementar exclusão de mapa
+        GISSaaS.showAlert('Funcionalidade de exclusão de mapa em desenvolvimento', 'info');
+    }
+}
+
+function deleteProject() {
+    if (confirm('Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
+        // TODO: Implementar exclusão de projeto
+        GISSaaS.showAlert('Funcionalidade de exclusão de projeto em desenvolvimento', 'info');
+    }
+}
+</script>
+{% endblock %}
+

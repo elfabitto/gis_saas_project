@@ -1,0 +1,377 @@
+{% extends 'maps/base.html' %}
+{% load static %}
+
+{% block title %}Meus Projetos - GIS SaaS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1><i class="fas fa-folder me-2"></i>Meus Projetos</h1>
+                    <p class="text-muted">Gerencie seus projetos de mapas</p>
+                </div>
+                <a href="{% url 'new_project' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Novo Projeto
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" class="form-control" id="search-input" 
+                       placeholder="Buscar projetos...">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="status-filter">
+                <option value="">Todos os status</option>
+                <option value="active">Ativos</option>
+                <option value="completed">Concluídos</option>
+                <option value="processing">Processando</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="sort-by">
+                <option value="created_at">Mais recentes</option>
+                <option value="name">Nome A-Z</option>
+                <option value="updated_at">Última modificação</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <div class="row" id="projects-container">
+        <!-- Loading state -->
+        <div class="col-12 text-center" id="loading-state">
+            <div class="loading"></div>
+            <p class="mt-2">Carregando projetos...</p>
+        </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="row d-none" id="empty-state">
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+            <h3>Nenhum projeto encontrado</h3>
+            <p class="text-muted">Comece criando seu primeiro projeto de mapa.</p>
+            <a href="{% url 'new_project' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Criar Primeiro Projeto
+            </a>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Navegação de projetos" id="pagination-container">
+                <!-- Pagination will be inserted here -->
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Project Actions Modal -->
+<div class="modal fade" id="projectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Ações do Projeto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Modal content will be inserted here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allProjects = [];
+let filteredProjects = [];
+let currentPage = 1;
+const projectsPerPage = 9;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+    
+    // Search functionality
+    document.getElementById('search-input').addEventListener('input', debounce(filterProjects, 300));
+    document.getElementById('status-filter').addEventListener('change', filterProjects);
+    document.getElementById('sort-by').addEventListener('change', sortProjects);
+});
+
+async function loadProjects() {
+    try {
+        const response = await GISSaaS.getProjects();
+        allProjects = response.results || response;
+        filteredProjects = [...allProjects];
+        
+        if (allProjects.length === 0) {
+            showEmptyState();
+        } else {
+            displayProjects();
+        }
+        
+        hideLoadingState();
+        
+    } catch (error) {
+        console.error('Error loading projects:', error);
+        hideLoadingState();
+        GISSaaS.showAlert('Erro ao carregar projetos', 'danger');
+    }
+}
+
+function displayProjects() {
+    const container = document.getElementById('projects-container');
+    const startIndex = (currentPage - 1) * projectsPerPage;
+    const endIndex = startIndex + projectsPerPage;
+    const projectsToShow = filteredProjects.slice(startIndex, endIndex);
+    
+    if (projectsToShow.length === 0) {
+        showEmptyState();
+        return;
+    }
+    
+    container.innerHTML = projectsToShow.map(project => createProjectCard(project)).join('');
+    updatePagination();
+}
+
+function createProjectCard(project) {
+    const createdDate = new Date(project.created_at).toLocaleDateString('pt-BR');
+    const updatedDate = new Date(project.updated_at).toLocaleDateString('pt-BR');
+    
+    return `
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="project-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="mb-0">${project.name}</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/project/${project.id}/">
+                                <i class="fas fa-eye me-2"></i>Ver Projeto
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="editProject('${project.id}')">
+                                <i class="fas fa-edit me-2"></i>Editar
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="generateMapModal('${project.id}')">
+                                <i class="fas fa-map me-2"></i>Gerar Mapa
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteProject('${project.id}')">
+                                <i class="fas fa-trash me-2"></i>Excluir
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <p class="text-muted">${project.description || 'Sem descrição'}</p>
+                
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                        <div class="border-end">
+                            <strong>${project.uploaded_files_count}</strong>
+                            <br><small class="text-muted">Arquivos</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border-end">
+                            <strong>0</strong>
+                            <br><small class="text-muted">Mapas</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <span class="project-status status-active">Ativo</span>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        Criado em ${createdDate}
+                    </small>
+                    <a href="/project/${project.id}/" class="btn btn-sm btn-primary">
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function filterProjects() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const statusFilter = document.getElementById('status-filter').value;
+    
+    filteredProjects = allProjects.filter(project => {
+        const matchesSearch = project.name.toLowerCase().includes(searchTerm) ||
+                            (project.description && project.description.toLowerCase().includes(searchTerm));
+        
+        // For now, all projects are considered "active"
+        const matchesStatus = !statusFilter || statusFilter === 'active';
+        
+        return matchesSearch && matchesStatus;
+    });
+    
+    currentPage = 1;
+    displayProjects();
+}
+
+function sortProjects() {
+    const sortBy = document.getElementById('sort-by').value;
+    
+    filteredProjects.sort((a, b) => {
+        switch (sortBy) {
+            case 'name':
+                return a.name.localeCompare(b.name);
+            case 'updated_at':
+                return new Date(b.updated_at) - new Date(a.updated_at);
+            case 'created_at':
+            default:
+                return new Date(b.created_at) - new Date(a.created_at);
+        }
+    });
+    
+    displayProjects();
+}
+
+function updatePagination() {
+    const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
+    const container = document.getElementById('pagination-container');
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let paginationHTML = '<ul class="pagination justify-content-center">';
+    
+    // Previous button
+    paginationHTML += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Anterior</a>
+        </li>
+    `;
+    
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage || i === 1 || i === totalPages || 
+            (i >= currentPage - 1 && i <= currentPage + 1)) {
+            paginationHTML += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                </li>
+            `;
+        } else if (i === currentPage - 2 || i === currentPage + 2) {
+            paginationHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+    }
+    
+    // Next button
+    paginationHTML += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Próximo</a>
+        </li>
+    `;
+    
+    paginationHTML += '</ul>';
+    container.innerHTML = paginationHTML;
+}
+
+function changePage(page) {
+    const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
+    if (page < 1 || page > totalPages) return;
+    
+    currentPage = page;
+    displayProjects();
+}
+
+function showEmptyState() {
+    document.getElementById('projects-container').innerHTML = '';
+    document.getElementById('empty-state').classList.remove('d-none');
+}
+
+function hideLoadingState() {
+    document.getElementById('loading-state').style.display = 'none';
+}
+
+// Project actions
+function editProject(projectId) {
+    // TODO: Implement edit functionality
+    GISSaaS.showAlert('Funcionalidade de edição em desenvolvimento', 'info');
+}
+
+function generateMapModal(projectId) {
+    const modal = new bootstrap.Modal(document.getElementById('projectModal'));
+    document.getElementById('modalTitle').textContent = 'Gerar Mapa';
+    document.getElementById('modalBody').innerHTML = `
+        <p>Escolha o formato de saída para o mapa:</p>
+        <div class="d-grid gap-2">
+            <button class="btn btn-outline-primary" onclick="generateMap('${projectId}', 'html')">
+                <i class="fas fa-globe me-2"></i>Mapa Interativo (HTML)
+            </button>
+            <button class="btn btn-outline-primary" onclick="generateMap('${projectId}', 'png')">
+                <i class="fas fa-image me-2"></i>Imagem (PNG)
+            </button>
+            <button class="btn btn-outline-primary" onclick="generateMap('${projectId}', 'pdf')">
+                <i class="fas fa-file-pdf me-2"></i>Documento (PDF)
+            </button>
+        </div>
+    `;
+    modal.show();
+}
+
+async function generateMap(projectId, format) {
+    try {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('projectModal'));
+        modal.hide();
+        
+        GISSaaS.showAlert('Gerando mapa... Isso pode levar alguns minutos.', 'info');
+        
+        const result = await GISSaaS.generateMap(projectId, format);
+        
+        GISSaaS.showAlert('Mapa gerado com sucesso!', 'success');
+        
+        // TODO: Show download link or redirect to project page
+        
+    } catch (error) {
+        console.error('Error generating map:', error);
+        GISSaaS.showAlert(`Erro ao gerar mapa: ${error.message}`, 'danger');
+    }
+}
+
+function deleteProject(projectId) {
+    if (confirm('Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
+        // TODO: Implement delete functionality
+        GISSaaS.showAlert('Funcionalidade de exclusão em desenvolvimento', 'info');
+    }
+}
+
+// Utility function for debouncing
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+</script>
+{% endblock %}
+

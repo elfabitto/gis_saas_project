@@ -651,7 +651,7 @@ A documentação técnica apresentada fornece uma visão abrangente de todos os 
 
 ---
 
-**Autor**: Manus AI  
+**Autor**: Fabio Lima
 **Data**: Setembro 2025  
 **Versão**: 1.0.0
 

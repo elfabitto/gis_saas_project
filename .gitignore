@@ -1,0 +1,39 @@
+# Ambiente virtual
+venv/
+env/
+.env
+
+# Arquivos Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.py[cod]
+*$py.class
+
+
+# Banco de dados
+*.sqlite3
+db.sqlite3
+
+# Arquivos de mídia e estáticos coletados
+media/
+static/admin/
+static/rest_framework/
+
+# Arquivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Arquivos de log
+*.log
+
+# Arquivos temporários
+*.bak
+*.tmp
+.DS_Store
+Thumbs.db

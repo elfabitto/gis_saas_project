@@ -15,7 +15,10 @@ from PIL import Image, ImageDraw, ImageFont
 from django.conf import settings
 from django.core.files.base import ContentFile
 from .models import GISProject, UploadedGISFile, MapConfiguration, GeneratedMap
-from .export_utils import MapExporter, optimize_export_quality, validate_export_parameters
+from .export_utils import (
+    MapExporter, optimize_export_quality, validate_export_parameters,
+    import_pdf_libs, import_html_libs
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,17 +53,21 @@ class MapGenerator:
             exporter = MapExporter(self.project, self.config)
             
             if output_format == 'html':
+                if not import_html_libs():
+                    raise ImportError("Bibliotecas HTML não estão disponíveis")
                 # Gerar mapa interativo
                 map_html = self._generate_interactive_map_content(gdf)
                 return exporter.export_to_html(map_html)
-            elif output_format in ['png', 'pdf']:
+            elif output_format == 'pdf':
+                if not import_pdf_libs():
+                    raise ImportError("Bibliotecas PDF não estão disponíveis")
                 # Gerar mapa estático
                 fig = self._generate_static_map_figure(gdf, output_format)
-                
-                if output_format == 'png':
-                    return exporter.export_to_png(fig)
-                else:  # pdf
-                    return exporter.export_to_pdf(fig)
+                return exporter.export_to_pdf(fig)
+            elif output_format == 'png':
+                # Gerar mapa estático
+                fig = self._generate_static_map_figure(gdf, output_format)
+                return exporter.export_to_png(fig)
             else:
                 raise ValueError(f"Formato não suportado: {output_format}")
                 
@@ -475,4 +482,3 @@ def generate_map_for_project(project_id: str, output_format: str) -> GeneratedMa
     except Exception as e:
         logger.error(f"Erro na geração do mapa: {str(e)}")
         raise
-

@@ -7,20 +7,36 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.backends.backend_agg import FigureCanvasAgg
-from reportlab.lib.pagesizes import A4, letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
-from weasyprint import HTML, CSS
 from django.conf import settings
-from django.template.loader import render_to_string
 from PIL import Image, ImageDraw, ImageFont
+import logging
 
 logger = logging.getLogger(__name__)
+
+# Importações condicionais para diferentes formatos
+def import_pdf_libs():
+    try:
+        from reportlab.lib.pagesizes import A4, letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT
+        from matplotlib.backends.backend_pdf import PdfPages
+        return True
+    except ImportError:
+        logger.warning("Bibliotecas PDF não encontradas")
+        return False
+
+def import_html_libs():
+    try:
+        from weasyprint import HTML, CSS
+        from django.template.loader import render_to_string
+        return True
+    except ImportError:
+        logger.warning("WeasyPrint não encontrado")
+        return False
 
 
 class MapExporter:
@@ -449,4 +465,3 @@ def validate_export_parameters(output_format: str, **kwargs) -> bool:
             return False
     
     return True
-

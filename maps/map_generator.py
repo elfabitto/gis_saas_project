@@ -6,12 +6,7 @@ import logging
 from typing import Dict, List, Tuple, Optional
 import pandas as pd
 import geopandas as gpd
-import folium
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from matplotlib.patches import Rectangle
 import requests
-from PIL import Image, ImageDraw, ImageFont
 from django.conf import settings
 from django.core.files.base import ContentFile
 from .models import GISProject, UploadedGISFile, MapConfiguration, GeneratedMap
@@ -33,43 +28,200 @@ class MapGenerator:
         
     def generate_location_map(self, output_format: str = 'html') -> str:
         """
-        Gerar mapa de localização completo
+        Gerar mapa de localização completo usando Leaflet
         
         Args:
-            output_format: Formato de saída ('html', 'png', 'pdf')
+            output_format: Formato de saída ('html')
             
         Returns:
             Caminho do arquivo gerado
         """
         try:
-            # Validar parâmetros
-            if not validate_export_parameters(output_format):
-                raise ValueError(f"Parâmetros de exportação inválidos para formato: {output_format}")
-            
             # Carregar dados GIS
             gdf = self._load_project_data()
             
-            # Criar exportador
-            exporter = MapExporter(self.project, self.config)
+            # Obter bounds e centro
+            bounds = gdf.total_bounds
+            center_lat = (bounds[1] + bounds[3]) / 2
+            center_lon = (bounds[0] + bounds[2]) / 2
             
-            if output_format == 'html':
-                if not import_html_libs():
-                    raise ImportError("Bibliotecas HTML não estão disponíveis")
-                # Gerar mapa interativo
-                map_html = self._generate_interactive_map_content(gdf)
-                return exporter.export_to_html(map_html)
-            elif output_format == 'pdf':
-                if not import_pdf_libs():
-                    raise ImportError("Bibliotecas PDF não estão disponíveis")
-                # Gerar mapa estático
-                fig = self._generate_static_map_figure(gdf, output_format)
-                return exporter.export_to_pdf(fig)
-            elif output_format == 'png':
-                # Gerar mapa estático
-                fig = self._generate_static_map_figure(gdf, output_format)
-                return exporter.export_to_png(fig)
-            else:
-                raise ValueError(f"Formato não suportado: {output_format}")
+            # Criar HTML com três mapas Leaflet
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+                <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+                <style>
+                    .map-container {{ display: flex; }}
+                    #main-map {{ height: 800px; width: 800px; }}
+                    #state-map {{ height: 400px; width: 400px; margin-left: 20px; }}
+                    #country-map {{ height: 400px; width: 400px; margin-left: 20px; margin-top: 20px; }}
+                </style>
+            </head>
+            <body>
+                <div class="map-container">
+                    <div id="main-map"></div>
+                    <div>
+                        <div id="state-map"></div>
+                        <div id="country-map"></div>
+                    </div>
+                </div>
+                <script>
+                    var geojson = {gdf.to_json()};
+                    
+                    // Inicializar mapas com centro inicial
+                    var mainMap = L.map('main-map').setView([{center_lat}, {center_lon}], 4);
+                    var stateMap = L.map('state-map').setView([{center_lat}, {center_lon}], 4);
+                    var countryMap = L.map('country-map').setView([-14.235, -51.925], 4);
+
+                    // Adicionar camadas base OpenStreetMap
+                    var osmLayer = 'https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png';
+                    var osmAttrib = '© OpenStreetMap contributors';
+                    
+                    L.tileLayer(osmLayer, {{attribution: osmAttrib}}).addTo(mainMap);
+                    L.tileLayer(osmLayer, {{attribution: osmAttrib}}).addTo(stateMap);
+                    L.tileLayer(osmLayer, {{attribution: osmAttrib}}).addTo(countryMap);
+
+                    // Carregar dados de municípios e estados
+                    var loadData = Promise.all([
+                        fetch('https://raw.githubusercontent.com/tbrugz/geodata-br/master/geojson/geojs-100-mun.json').then(response => response.json()),
+                        fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson').then(response => response.json())
+                    ]);
+
+                    loadData.then(([municipios, estados]) => {{
+                        console.log('Dados carregados com sucesso');
+                        // Mapa principal
+                        L.geoJSON(municipios, {{
+                            style: {{
+                                fillColor: '#f0f0f0',
+                                color: '#808080',
+                                weight: 1,
+                                opacity: 0.5,
+                                fillOpacity: 0.2
+                            }}
+                        }}).addTo(mainMap);
+                        
+                        L.geoJSON(estados, {{
+                            style: {{
+                                fillColor: '#e0e0e0',
+                                color: '#606060',
+                                weight: 1.5,
+                                opacity: 0.7,
+                                fillOpacity: 0.1
+                            }}
+                        }}).addTo(mainMap);
+                        
+                        var kmlLayer = L.geoJSON(geojson, {{
+                            style: function(feature) {{
+                                return {{
+                                    fillColor: '{self.config.primary_color}',
+                                    color: '{self.config.secondary_color}',
+                                    weight: 2,
+                                    fillOpacity: 0.6
+                                }};
+                            }}
+                        }}).addTo(mainMap);
+                        mainMap.fitBounds(kmlLayer.getBounds());
+                        
+                        // Mapa do estado - encontrar e dar zoom no estado que contém o KML
+                        const stateLayer = L.geoJSON(estados, {{
+                            style: {{
+                                fillColor: '#e0e0e0',
+                                color: '#606060',
+                                weight: 1.5,
+                                opacity: 0.7,
+                                fillOpacity: 0.1
+                            }}
+                        }}).addTo(stateMap);
+
+                        // Encontrar o estado que contém o KML
+                        try {{
+                            // Primeiro, adicionar todos os estados ao mapa
+                            const statesLayer = L.geoJSON(estados, {{
+                                style: {{
+                                    fillColor: '#e0e0e0',
+                                    color: '#606060',
+                                    weight: 1.5,
+                                    opacity: 0.7,
+                                    fillOpacity: 0.1
+                                }},
+                                onEachFeature: function(feature, layer) {{
+                                    // Verificar se o KML intersecta com este estado
+                                    const kmlPolygon = L.geoJSON(geojson).getBounds();
+                                    const statePolygon = layer.getBounds();
+                                    
+                                    if (kmlPolygon.intersects(statePolygon)) {{
+                                        console.log('KML encontrado no estado:', feature.properties.name);
+                                        // Destacar o estado encontrado
+                                        layer.setStyle({{
+                                            fillColor: '#d0d0d0',
+                                            color: '#404040',
+                                            weight: 2,
+                                            opacity: 1,
+                                            fillOpacity: 0.2
+                                        }});
+                                        // Ajustar zoom para este estado
+                                        stateMap.fitBounds(statePolygon, {{padding: [20, 20]}});
+                                    }}
+                                }}
+                            }}).addTo(stateMap);
+                        }} catch (error) {{
+                            console.error('Erro ao processar estado:', error);
+                        }}
+
+                        // Adicionar KML por cima
+                        L.geoJSON(geojson, {{
+                            style: function(feature) {{
+                                return {{
+                                    fillColor: '{self.config.primary_color}',
+                                    color: '{self.config.secondary_color}',
+                                    weight: 2,
+                                    fillOpacity: 0.6
+                                }};
+                            }}
+                        }}).addTo(stateMap);
+                        
+                        // Mapa do país - mostrar todo o Brasil
+                        const countryLayer = L.geoJSON(estados, {{
+                            style: {{
+                                fillColor: '#e0e0e0',
+                                color: '#606060',
+                                weight: 1.5,
+                                opacity: 0.7,
+                                fillOpacity: 0.1
+                            }}
+                        }}).addTo(countryMap);
+                        
+                        // Ajustar zoom para mostrar todo o Brasil
+                        countryMap.fitBounds(countryLayer.getBounds());
+                        
+                        // Adicionar KML por cima
+                        L.geoJSON(geojson, {{
+                            style: function(feature) {{
+                                return {{
+                                    fillColor: '{self.config.primary_color}',
+                                    color: '{self.config.secondary_color}',
+                                    weight: 2,
+                                    fillOpacity: 0.6
+                                }};
+                            }}
+                        }}).addTo(countryMap);
+                    }}).catch(error => console.error('Erro ao carregar dados:', error));
+                </script>
+            </body>
+            </html>
+            """
+            
+            # Salvar HTML
+            filename = f'{self.project.id}_map.html'
+            output_path = os.path.join(settings.MEDIA_ROOT, 'generated_maps', filename)
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            
+            with open(output_path, 'w') as f:
+                f.write(html_content)
+            
+            return output_path
                 
         except Exception as e:
             logger.error(f"Erro na geração do mapa: {str(e)}")
@@ -96,333 +248,7 @@ class MapGenerator:
         combined_gdf = gpd.GeoDataFrame(pd.concat(gdfs, ignore_index=True))
         return combined_gdf
     
-    def _generate_interactive_map_content(self, gdf: gpd.GeoDataFrame) -> str:
-        """Gerar conteúdo HTML do mapa interativo usando Folium"""
-        try:
-            # Calcular centro e bounds
-            bounds = gdf.total_bounds
-            center_lat = (bounds[1] + bounds[3]) / 2
-            center_lon = (bounds[0] + bounds[2]) / 2
-            
-            # Criar mapa principal
-            main_map = folium.Map(
-                location=[center_lat, center_lon],
-                zoom_start=12,
-                tiles='OpenStreetMap'
-            )
-            
-            # Adicionar área de interesse
-            folium.GeoJson(
-                gdf.to_json(),
-                style_function=lambda feature: {
-                    'fillColor': self.config.primary_color,
-                    'color': self.config.secondary_color,
-                    'weight': 2,
-                    'fillOpacity': 0.7
-                },
-                popup=folium.Popup(self.config.title, parse_html=True)
-            ).add_to(main_map)
-            
-            # Ajustar zoom para mostrar toda a área
-            main_map.fit_bounds([[bounds[1], bounds[0]], [bounds[3], bounds[2]]])
-            
-            # Retornar HTML do mapa
-            return main_map._repr_html_()
-            
-        except Exception as e:
-            logger.error(f"Erro na geração do mapa interativo: {str(e)}")
-            raise
-    
-    def _generate_static_map_figure(self, gdf: gpd.GeoDataFrame, output_format: str) -> plt.Figure:
-        """Gerar figura matplotlib para mapa estático"""
-        try:
-            # Obter configurações otimizadas para o formato
-            config = optimize_export_quality(output_format)
-            
-            # Configurar figura
-            fig = plt.figure(figsize=config['figure_size'])
-            fig.patch.set_facecolor('white')
-            
-            # Layout baseado na configuração do template
-            layout_config = self.config.layout.template_config
-            
-            # Mapa principal (área de interesse)
-            main_ax = self._create_main_map(fig, gdf, layout_config, config)
-            
-            # Mapas de contexto (município e estado)
-            if self.config.layout.layout_type == 'location':
-                self._add_context_maps(fig, gdf, layout_config)
-            
-            # Adicionar elementos do mapa
-            self._add_map_elements(fig, layout_config)
-            
-            return fig
-            
-        except Exception as e:
-            logger.error(f"Erro na geração do mapa estático: {str(e)}")
-            raise
-    
-    def _create_main_map(self, fig, gdf: gpd.GeoDataFrame, layout_config: Dict, export_config: Dict = None) -> plt.Axes:
-        """Criar mapa principal"""
-        main_config = layout_config.get('main_map', {})
-        
-        # Usar configurações de exportação se fornecidas
-        if export_config:
-            line_width = export_config.get('line_width', 2)
-            font_scale = export_config.get('font_scale', 1.0)
-        else:
-            line_width = 2
-            font_scale = 1.0
-        
-        # Posição e tamanho do mapa principal
-        left = 0.4
-        bottom = 0.15
-        width = 0.55
-        height = 0.7
-        
-        ax = fig.add_axes([left, bottom, width, height])
-        
-        # Plotar geometrias
-        gdf.plot(
-            ax=ax,
-            color=self.config.primary_color,
-            edgecolor=self.config.secondary_color,
-            linewidth=line_width,
-            alpha=0.7
-        )
-        
-        # Configurar eixos
-        ax.set_xlim(gdf.total_bounds[0] - 0.01, gdf.total_bounds[2] + 0.01)
-        ax.set_ylim(gdf.total_bounds[1] - 0.01, gdf.total_bounds[3] + 0.01)
-        
-        # Adicionar grid se configurado
-        if main_config.get('show_coordinates', True):
-            ax.grid(True, alpha=0.3)
-            ax.set_xlabel('Longitude', fontsize=10*font_scale)
-            ax.set_ylabel('Latitude', fontsize=10*font_scale)
-        else:
-            ax.set_xticks([])
-            ax.set_yticks([])
-        
-        return ax
-    
-    def _add_context_maps(self, fig, gdf: gpd.GeoDataFrame, layout_config: Dict):
-        """Adicionar mapas de contexto (município e estado)"""
-        try:
-            # Obter centroide da área
-            centroid = gdf.geometry.unary_union.centroid
-            
-            # Mapa do município (simulado - em produção, usar dados reais)
-            self._add_municipality_map(fig, centroid, layout_config)
-            
-            # Mapa do estado (simulado - em produção, usar dados reais)
-            self._add_state_map(fig, centroid, layout_config)
-            
-        except Exception as e:
-            logger.warning(f"Erro ao adicionar mapas de contexto: {str(e)}")
-    
-    def _add_municipality_map(self, fig, centroid, layout_config: Dict):
-        """Adicionar mapa do município"""
-        muni_config = layout_config.get('municipality_map', {})
-        
-        # Posição do mapa do município
-        left = 0.05
-        bottom = 0.05
-        width = 0.25
-        height = 0.25
-        
-        ax = fig.add_axes([left, bottom, width, height])
-        
-        # Simular área do município (retângulo maior)
-        municipality_bounds = [
-            centroid.x - 0.1, centroid.y - 0.1,
-            centroid.x + 0.1, centroid.y + 0.1
-        ]
-        
-        # Desenhar município
-        muni_rect = Rectangle(
-            (municipality_bounds[0], municipality_bounds[1]),
-            municipality_bounds[2] - municipality_bounds[0],
-            municipality_bounds[3] - municipality_bounds[1],
-            linewidth=1, edgecolor='gray', facecolor='lightgray', alpha=0.5
-        )
-        ax.add_patch(muni_rect)
-        
-        # Destacar área de interesse
-        area_rect = Rectangle(
-            (centroid.x - 0.02, centroid.y - 0.02),
-            0.04, 0.04,
-            linewidth=2, edgecolor=self.config.secondary_color,
-            facecolor=self.config.primary_color, alpha=0.8
-        )
-        ax.add_patch(area_rect)
-        
-        ax.set_xlim(municipality_bounds[0], municipality_bounds[2])
-        ax.set_ylim(municipality_bounds[1], municipality_bounds[3])
-        ax.set_title(muni_config.get('title', 'Localização no Município'), fontsize=10)
-        ax.set_xticks([])
-        ax.set_yticks([])
-    
-    def _add_state_map(self, fig, centroid, layout_config: Dict):
-        """Adicionar mapa do estado"""
-        state_config = layout_config.get('state_map', {})
-        
-        # Posição do mapa do estado
-        left = 0.05
-        bottom = 0.7
-        width = 0.25
-        height = 0.25
-        
-        ax = fig.add_axes([left, bottom, width, height])
-        
-        # Simular área do estado (retângulo ainda maior)
-        state_bounds = [
-            centroid.x - 0.5, centroid.y - 0.5,
-            centroid.x + 0.5, centroid.y + 0.5
-        ]
-        
-        # Desenhar estado
-        state_rect = Rectangle(
-            (state_bounds[0], state_bounds[1]),
-            state_bounds[2] - state_bounds[0],
-            state_bounds[3] - state_bounds[1],
-            linewidth=1, edgecolor='gray', facecolor='lightgray', alpha=0.3
-        )
-        ax.add_patch(state_rect)
-        
-        # Destacar município
-        muni_rect = Rectangle(
-            (centroid.x - 0.1, centroid.y - 0.1),
-            0.2, 0.2,
-            linewidth=2, edgecolor=self.config.secondary_color,
-            facecolor=self.config.primary_color, alpha=0.6
-        )
-        ax.add_patch(muni_rect)
-        
-        ax.set_xlim(state_bounds[0], state_bounds[2])
-        ax.set_ylim(state_bounds[1], state_bounds[3])
-        ax.set_title(state_config.get('title', 'Localização no Estado'), fontsize=10)
-        ax.set_xticks([])
-        ax.set_yticks([])
-    
-    def _add_map_elements(self, fig, layout_config: Dict):
-        """Adicionar elementos do mapa (título, legenda, escala, etc.)"""
-        # Título principal
-        fig.suptitle(self.config.title, fontsize=16, fontweight='bold', y=0.95)
-        
-        if self.config.subtitle:
-            fig.text(0.5, 0.92, self.config.subtitle, ha='center', fontsize=12)
-        
-        # Legenda
-        if self.config.show_legend:
-            self._add_legend(fig, layout_config)
-        
-        # Rosa dos ventos
-        if self.config.show_north_arrow:
-            self._add_north_arrow(fig)
-        
-        # Escala
-        if self.config.show_scale:
-            self._add_scale_bar(fig)
-        
-        # Logo (se disponível)
-        if self.config.logo:
-            self._add_logo(fig)
-        
-        # Informações adicionais
-        if self.config.additional_info:
-            fig.text(0.02, 0.02, self.config.additional_info, fontsize=8, 
-                    verticalalignment='bottom', wrap=True)
-    
-    def _add_legend(self, fig, layout_config: Dict):
-        """Adicionar legenda"""
-        legend_ax = fig.add_axes([0.75, 0.15, 0.2, 0.3])
-        legend_ax.set_xlim(0, 1)
-        legend_ax.set_ylim(0, 1)
-        
-        # Adicionar itens da legenda
-        legend_ax.add_patch(Rectangle((0.1, 0.7), 0.2, 0.1, 
-                                    facecolor=self.config.primary_color, alpha=0.7))
-        legend_ax.text(0.4, 0.75, 'Área de Interesse', fontsize=10, va='center')
-        
-        legend_ax.set_title('Legenda', fontsize=12, fontweight='bold')
-        legend_ax.set_xticks([])
-        legend_ax.set_yticks([])
-        legend_ax.spines['top'].set_visible(False)
-        legend_ax.spines['right'].set_visible(False)
-        legend_ax.spines['bottom'].set_visible(False)
-        legend_ax.spines['left'].set_visible(False)
-    
-    def _add_north_arrow(self, fig):
-        """Adicionar rosa dos ventos"""
-        # Posição da rosa dos ventos
-        ax = fig.add_axes([0.85, 0.8, 0.1, 0.1])
-        ax.set_xlim(-1, 1)
-        ax.set_ylim(-1, 1)
-        
-        # Desenhar seta apontando para o norte
-        ax.arrow(0, -0.5, 0, 1, head_width=0.2, head_length=0.2, 
-                fc='black', ec='black')
-        ax.text(0, -0.8, 'N', ha='center', va='center', fontsize=12, fontweight='bold')
-        
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_aspect('equal')
-        for spine in ax.spines.values():
-            spine.set_visible(False)
-    
-    def _add_scale_bar(self, fig):
-        """Adicionar barra de escala"""
-        # Implementação simplificada da barra de escala
-        scale_ax = fig.add_axes([0.4, 0.05, 0.2, 0.05])
-        scale_ax.set_xlim(0, 1)
-        scale_ax.set_ylim(0, 1)
-        
-        # Desenhar barra de escala
-        scale_ax.add_patch(Rectangle((0.1, 0.3), 0.8, 0.4, 
-                                   facecolor='black', edgecolor='black'))
-        scale_ax.text(0.5, 0.1, '1 km', ha='center', va='center', fontsize=10)
-        
-        scale_ax.set_xticks([])
-        scale_ax.set_yticks([])
-        for spine in scale_ax.spines.values():
-            spine.set_visible(False)
-    
-    def _add_logo(self, fig):
-        """Adicionar logo"""
-        try:
-            # Carregar e redimensionar logo
-            logo_path = self.config.logo.path
-            logo_img = Image.open(logo_path)
-            
-            # Redimensionar logo
-            logo_img.thumbnail((100, 100), Image.Resampling.LANCZOS)
-            
-            # Adicionar logo ao mapa
-            logo_ax = fig.add_axes([0.02, 0.85, 0.15, 0.1])
-            logo_ax.imshow(logo_img)
-            logo_ax.set_xticks([])
-            logo_ax.set_yticks([])
-            for spine in logo_ax.spines.values():
-                spine.set_visible(False)
-                
-        except Exception as e:
-            logger.warning(f"Erro ao adicionar logo: {str(e)}")
-    
-    def _save_static_map(self, fig, output_format: str) -> str:
-        """Salvar mapa estático"""
-        filename = f'{self.project.id}_map.{output_format}'
-        output_path = os.path.join(settings.MEDIA_ROOT, 'generated_maps', filename)
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
-        if output_format == 'png':
-            fig.savefig(output_path, dpi=300, bbox_inches='tight', 
-                       facecolor='white', edgecolor='none')
-        elif output_format == 'pdf':
-            fig.savefig(output_path, format='pdf', bbox_inches='tight',
-                       facecolor='white', edgecolor='none')
-        
-        return output_path
+
 
 
 def generate_map_for_project(project_id: str, output_format: str) -> GeneratedMap:

@@ -103,7 +103,7 @@ class MapGenerator:
         # Plotar dados por cima
         states_web.plot(ax=ax_main, color='#e0e0e0', edgecolor='#606060', alpha=0.3)
         gdf_web.plot(ax=ax_main, color=self.config.primary_color, edgecolor=self.config.secondary_color)
-        ax_main.set_title('Mapa Principal', pad=10, fontsize=12)
+        # Título removido conforme solicitado
         
         # Definir proporção quadrada para o mapa principal
         ax_main.set_aspect('equal')
@@ -153,7 +153,7 @@ class MapGenerator:
             state_web.plot(ax=ax_state, color='#d0d0d0', edgecolor='#404040', alpha=0.3)
             gdf_web.plot(ax=ax_state, color=self.config.primary_color, edgecolor=self.config.secondary_color)
         ax_state.grid(True, linestyle='--', alpha=0.6)
-        ax_state.set_title('Mapa do Estado', pad=10, fontsize=12)
+        # Título removido conforme solicitado
         ax_state.set_aspect('equal')
         ax_state.xaxis.set_major_formatter(plt.FuncFormatter(format_coord))
         ax_state.yaxis.set_major_formatter(plt.FuncFormatter(format_coord))
@@ -183,7 +183,7 @@ class MapGenerator:
             state_web.plot(ax=ax_country, color='#d0d0d0', edgecolor='#404040', alpha=0.3)
         gdf_web.plot(ax=ax_country, color=self.config.primary_color, edgecolor=self.config.secondary_color)
         ax_country.grid(True, linestyle='--', alpha=0.6)
-        ax_country.set_title('Mapa do País', pad=10, fontsize=12)
+        # Título removido conforme solicitado
         ax_country.set_aspect('equal')
         ax_country.xaxis.set_major_formatter(plt.FuncFormatter(format_coord))
         ax_country.yaxis.set_major_formatter(plt.FuncFormatter(format_coord))
@@ -226,26 +226,53 @@ class MapGenerator:
         # Redimensionar a imagem auxiliar para ter a mesma altura que a imagem principal
         aux_img = aux_img.resize((int(aux_img.width * main_img.height / aux_img.height), main_img.height))
         
-        # Criar uma nova imagem com largura combinada
+        # Criar uma nova imagem com largura combinada e espaço adicional para o título
+        title_height = 200  # Aumentado para dar mais espaço ao título e margens
         combined_width = main_img.width + aux_img.width
         combined_height = main_img.height
-        combined_img = Image.new('RGB', (combined_width, combined_height + 50), color='white')
+        combined_img = Image.new('RGB', (combined_width, combined_height + title_height), color='white')
         
-        # Adicionar título
+        # Adicionar título com estilo semelhante aos mapas
         from PIL import ImageDraw, ImageFont
         draw = ImageDraw.Draw(combined_img)
+        
+        # Criar um retângulo para o fundo do título com margens
+        margin_top = 50  # Margem superior
+        margin_bottom = 50  # Margem inferior
+        draw.rectangle([(0, 0), (combined_width, title_height)], fill="#f0f0f000", outline="#606060", width=2)
+        
         try:
-            # Tentar carregar uma fonte
-            font = ImageFont.truetype("arial.ttf", 36)
+            # Tentar carregar uma fonte com tamanho maior
+            font = ImageFont.truetype("arial.ttf", 150)  # Aumentado para 56
+            subtitle_font = ImageFont.truetype("arial.ttf", 24)
         except:
-            # Se não conseguir, usar a fonte padrão
-            font = ImageFont.load_default()
+            try:
+                # Tentar carregar outra fonte se arial não estiver disponível
+                font = ImageFont.truetype("times.ttf", 150)
+                subtitle_font = ImageFont.truetype("times.ttf", 24)
+            except:
+                # Se não conseguir, usar a fonte padrão
+                font = ImageFont.load_default()
+                subtitle_font = ImageFont.load_default()
         
-        draw.text((combined_width // 2, 25), 'MAPA DE LOCALIZAÇÃO', fill='black', font=font, anchor='mm')
+        # Posicionar o título no centro do retângulo com margens
+        title_y = title_height // 2
+        draw.text((combined_width // 2, title_y), 'MAPA DE LOCALIZAÇÃO', fill='black', font=font, anchor='mm')
         
-        # Colar as imagens
-        combined_img.paste(main_img, (0, 50))
-        combined_img.paste(aux_img, (main_img.width, 50))
+        # Adicionar linhas decorativas acima e abaixo do título
+        line_margin = 40
+        line_y_top = margin_top + 20
+        line_y_bottom = title_height - margin_bottom - 20
+        draw.line([(line_margin, line_y_top), (combined_width - line_margin, line_y_top)], 
+                  fill="#FFFFFF00", width=2)
+        draw.line([(line_margin, line_y_bottom), (combined_width - line_margin, line_y_bottom)], 
+                  fill="#FFFDFD00", width=2)
+        
+        # Linha decorativa na borda inferior do título já adicionada acima
+        
+        # Colar as imagens abaixo do título
+        combined_img.paste(main_img, (0, title_height))
+        combined_img.paste(aux_img, (main_img.width, title_height))
         
         # Salvar a imagem combinada
         filename = f'{self.project.id}_map.png'

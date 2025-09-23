@@ -166,7 +166,7 @@ class MapExporter:
     
     def export_to_png(self, map_figure, output_path: str = None, dpi: int = 300) -> str:
         """
-        Exportar mapa para PNG de alta qualidade
+        Exportar mapa para PNG de alta qualidade em formato A4 horizontal
         
         Args:
             map_figure: Figura matplotlib do mapa
@@ -183,9 +183,30 @@ class MapExporter:
                     f'{self.project.id}_map.png'
                 )
             
-            # Configurar figura para alta qualidade
-            map_figure.set_size_inches(16, 12)
+            # Configurar figura para A4 horizontal (297x210mm)
+            map_figure.set_size_inches(11.69, 8.27)  # A4 horizontal em polegadas
             map_figure.patch.set_facecolor('white')
+            
+            # Adicionar título
+            map_figure.suptitle('MAPA DE LOCALIZAÇÃO', fontsize=14, fontweight='bold', y=0.95)
+            
+            # Adicionar rosa dos ventos
+            ax = map_figure.gca()
+            north_arrow = plt.imread('static/img/north_arrow.png')  # Certifique-se de ter esta imagem
+            newax = map_figure.add_axes([0.85, 0.15, 0.1, 0.1], anchor='SE')
+            newax.imshow(north_arrow)
+            newax.axis('off')
+            
+            # Adicionar grid
+            ax.grid(True, linestyle='--', alpha=0.6)
+            
+            # Adicionar legenda
+            handles = []
+            labels = []
+            for layer in ax.collections:
+                handles.append(layer)
+                labels.append(layer.get_label())
+            ax.legend(handles, labels, loc='lower left', bbox_to_anchor=(0.05, 0.05))
             
             # Salvar como PNG
             map_figure.savefig(

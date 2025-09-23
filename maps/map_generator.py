@@ -28,14 +28,156 @@ class MapGenerator:
         
     def generate_location_map(self, output_format: str = 'html') -> str:
         """
-        Gerar mapa de localização completo usando Leaflet
+        Gerar mapa de localização
         
         Args:
-            output_format: Formato de saída ('html')
+            output_format: Formato de saída ('html', 'png', 'pdf')
             
         Returns:
             Caminho do arquivo gerado
         """
+        if output_format == 'png':
+            return self.generate_static_map()
+        else:
+            return self.generate_interactive_map()
+            
+    def generate_static_map(self) -> str:
+        """Gerar mapa estático usando matplotlib"""
+        import matplotlib.pyplot as plt
+        import matplotlib.gridspec as gridspec
+        import requests
+        import geopandas as gpd
+        
+        # Carregar dados
+        gdf = self._load_project_data()
+        
+        # Carregar dados do Brasil
+        states_url = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
+        states_gdf = gpd.read_file(states_url)
+        
+        # Encontrar o estado que contém o polígono
+        containing_state = None
+        for idx, state in states_gdf.iterrows():
+            if any(gdf.intersects(state.geometry)):
+                containing_state = state
+                break
+        
+        # Criar figura no tamanho A4 horizontal
+        fig = plt.figure(figsize=(11.69, 8.27))
+        gs = gridspec.GridSpec(2, 2, width_ratios=[2, 1], height_ratios=[1, 1], hspace=0.3, wspace=0.3)
+        
+        # Mapa principal
+        ax_main = fig.add_subplot(gs[:, 0])
+        states_gdf.plot(ax=ax_main, color='#e0e0e0', edgecolor='#606060', alpha=0.5)
+        gdf.plot(ax=ax_main, color=self.config.primary_color, edgecolor=self.config.secondary_color)
+        ax_main.grid(True, linestyle='--', alpha=0.6)
+        ax_main.set_title('Mapa Principal', pad=10, fontsize=12)
+        ax_main.set_aspect('equal')
+        
+        # Configurar ticks em graus, minutos e segundos
+        def format_coord(x, pos):
+            degrees = int(abs(x))
+            minutes = int((abs(x) - degrees) * 60)
+            seconds = int(((abs(x) - degrees) * 60 - minutes) * 60)
+            return f"{degrees}°{minutes}'{seconds}\""
+            
+        ax_main.xaxis.set_major_formatter(plt.FuncFormatter(format_coord))
+        ax_main.yaxis.set_major_formatter(plt.FuncFormatter(format_coord))
+        plt.setp(ax_main.get_xticklabels(), rotation=0, ha='right', fontsize=8)
+        plt.setp(ax_main.get_yticklabels(), rotation=90, va='center', fontsize=8)
+        ax_main.xaxis.set_major_locator(plt.MaxNLocator(5))
+        ax_main.yaxis.set_major_locator(plt.MaxNLocator(5))
+        for spine in ax_main.spines.values():
+            spine.set_edgecolor('#606060')
+            spine.set_linewidth(1)
+        
+        # Ajustar zoom do mapa principal (mais próximo)
+        bounds = gdf.total_bounds
+        margin = 0.02  # Margem menor para aproximar mais
+        ax_main.set_xlim([bounds[0] - margin, bounds[2] + margin])
+        ax_main.set_ylim([bounds[1] - margin, bounds[3] + margin])
+        
+        # Mapa do estado
+        ax_state = fig.add_subplot(gs[0, 1])
+        states_gdf.plot(ax=ax_state, color='#e0e0e0', edgecolor='#606060', alpha=0.5)
+        if containing_state is not None:
+            # Criar GeoDataFrame para o estado
+            state_gdf = gpd.GeoDataFrame(geometry=[containing_state.geometry])
+            state_gdf.plot(ax=ax_state, color='#d0d0d0', edgecolor='#404040')
+            gdf.plot(ax=ax_state, color=self.config.primary_color, edgecolor=self.config.secondary_color)
+            state_bounds = containing_state.geometry.bounds
+            ax_state.set_xlim([state_bounds[0] - 0.1, state_bounds[2] + 0.1])
+            ax_state.set_ylim([state_bounds[1] - 0.1, state_bounds[3] + 0.1])
+        ax_state.grid(True, linestyle='--', alpha=0.6)
+        ax_state.set_title('Mapa do Estado', pad=10, fontsize=12)
+        ax_state.set_aspect('equal')
+        ax_state.xaxis.set_major_formatter(plt.FuncFormatter(format_coord))
+        ax_state.yaxis.set_major_formatter(plt.FuncFormatter(format_coord))
+        plt.setp(ax_state.get_xticklabels(), rotation=0, ha='right', fontsize=8)
+        plt.setp(ax_state.get_yticklabels(), rotation=90, va='center', fontsize=8)
+        ax_state.xaxis.set_major_locator(plt.MaxNLocator(4))
+        ax_state.yaxis.set_major_locator(plt.MaxNLocator(4))
+        for spine in ax_state.spines.values():
+            spine.set_edgecolor('#606060')
+            spine.set_linewidth(1)
+        
+        # Mapa do país
+        ax_country = fig.add_subplot(gs[1, 1])
+        states_gdf.plot(ax=ax_country, color='#e0e0e0', edgecolor='#606060', alpha=0.5)
+        if containing_state is not None:
+            # Criar GeoDataFrame para o estado
+            state_gdf = gpd.GeoDataFrame(geometry=[containing_state.geometry])
+            state_gdf.plot(ax=ax_country, color='#d0d0d0', edgecolor='#404040')
+        gdf.plot(ax=ax_country, color=self.config.primary_color, edgecolor=self.config.secondary_color)
+        ax_country.grid(True, linestyle='--', alpha=0.6)
+        ax_country.set_title('Mapa do País', pad=10, fontsize=12)
+        ax_country.set_aspect('equal')
+        ax_country.xaxis.set_major_formatter(plt.FuncFormatter(format_coord))
+        ax_country.yaxis.set_major_formatter(plt.FuncFormatter(format_coord))
+        plt.setp(ax_country.get_xticklabels(), rotation=0, ha='right', fontsize=8)
+        plt.setp(ax_country.get_yticklabels(), rotation=90, va='center', fontsize=8)
+        ax_country.xaxis.set_major_locator(plt.MaxNLocator(4))
+        ax_country.yaxis.set_major_locator(plt.MaxNLocator(4))
+        for spine in ax_country.spines.values():
+            spine.set_edgecolor('#606060')
+            spine.set_linewidth(1)
+        
+        # Ajustar zoom do mapa do país para mostrar todo o Brasil
+        country_bounds = states_gdf.total_bounds
+        ax_country.set_xlim([country_bounds[0] - 1, country_bounds[2] + 1])
+        ax_country.set_ylim([country_bounds[1] - 1, country_bounds[3] + 1])
+        
+        # Adicionar título principal
+        plt.suptitle('MAPA DE LOCALIZAÇÃO', fontsize=14, fontweight='bold', y=0.95)
+        
+        # Adicionar rosa dos ventos
+        try:
+            north_arrow_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'north_arrow.png')
+            north_arrow = plt.imread(north_arrow_path)
+            newax = fig.add_axes([0.85, 0.15, 0.1, 0.1], anchor='SE', zorder=2)
+            newax.imshow(north_arrow)
+            newax.axis('off')
+        except Exception as e:
+            logger.error(f"Erro ao adicionar rosa dos ventos: {str(e)}")
+        
+        # Adicionar legenda
+        ax_main.legend(gdf.geometry.name, loc='lower left', bbox_to_anchor=(0.05, 0.05))
+        
+        # Ajustar layout
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        
+        # Salvar como PNG
+        filename = f'{self.project.id}_map.png'
+        output_path = os.path.join(settings.MEDIA_ROOT, 'generated_maps', filename)
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        return output_path
+    
+    def generate_interactive_map(self) -> str:
+        """Gerar mapa interativo usando Leaflet"""
         try:
             # Carregar dados GIS
             gdf = self._load_project_data()
@@ -280,7 +422,10 @@ def generate_map_for_project(project_id: str, output_format: str) -> GeneratedMa
         try:
             # Gerar mapa
             generator = MapGenerator(project)
-            output_path = generator.generate_location_map(output_format)
+            if output_format == 'png':
+                output_path = generator.generate_static_map()
+            else:
+                output_path = generator.generate_interactive_map()
             
             # Salvar arquivo no modelo
             with open(output_path, 'rb') as f:

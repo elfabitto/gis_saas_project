@@ -7,6 +7,9 @@ from typing import Dict, List, Tuple, Optional
 import pandas as pd
 import geopandas as gpd
 import requests
+# Configurar backend não interativo para matplotlib
+import matplotlib
+matplotlib.use('Agg')
 from django.conf import settings
 from django.core.files.base import ContentFile
 from .models import GISProject, UploadedGISFile, MapConfiguration, GeneratedMap
@@ -48,6 +51,10 @@ class MapGenerator:
         import requests
         import geopandas as gpd
         import contextily as ctx
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+        import numpy as np
+        from PIL import Image
         
         # Carregar dados
         gdf = self._load_project_data()
@@ -60,8 +67,6 @@ class MapGenerator:
         states_gdf = gpd.read_file(states_url)
         states_web = states_gdf.to_crs(epsg=3857)
         
-
-        
         # Encontrar o estado que contém o polígono
         containing_state = None
         for idx, state in states_gdf.iterrows():
@@ -69,18 +74,28 @@ class MapGenerator:
                 containing_state = state
                 break
         
-        # Criar figura no tamanho A4 horizontal
-        fig = plt.figure(figsize=(11.69, 8.27))
-        gs = gridspec.GridSpec(2, 2, width_ratios=[2, 1], height_ratios=[1, 1], hspace=0.3, wspace=0.3)
+        # Criar duas figuras separadas
         
-        # Mapa principal
-        ax_main = fig.add_subplot(gs[:, 0])
+        # 1. Figura para o mapa principal (quadrada)
+        fig_main = plt.figure(figsize=(8, 8))  # Tamanho fixo quadrado
+        ax_main = fig_main.add_subplot(111)
         
-        # Ajustar zoom do mapa principal
+        # Ajustar zoom do mapa principal para garantir que seja quadrado
         bounds = gdf_web.total_bounds
         margin = 1000  # margem em metros
-        ax_main.set_xlim([bounds[0] - margin, bounds[2] + margin])
-        ax_main.set_ylim([bounds[1] - margin, bounds[3] + margin])
+        
+        # Calcular o centro do mapa
+        center_x = (bounds[0] + bounds[2]) / 2
+        center_y = (bounds[1] + bounds[3]) / 2
+        
+        # Calcular a maior dimensão (largura ou altura) + margem
+        width = bounds[2] - bounds[0] + 2 * margin
+        height = bounds[3] - bounds[1] + 2 * margin
+        max_dim = max(width, height)
+        
+        # Definir limites quadrados a partir do centro
+        ax_main.set_xlim([center_x - max_dim/2, center_x + max_dim/2])
+        ax_main.set_ylim([center_y - max_dim/2, center_y + max_dim/2])
         
         # Adicionar fundo do OpenStreetMap
         ctx.add_basemap(ax_main, source=ctx.providers.OpenStreetMap.Mapnik)
@@ -89,6 +104,9 @@ class MapGenerator:
         states_web.plot(ax=ax_main, color='#e0e0e0', edgecolor='#606060', alpha=0.3)
         gdf_web.plot(ax=ax_main, color=self.config.primary_color, edgecolor=self.config.secondary_color)
         ax_main.set_title('Mapa Principal', pad=10, fontsize=12)
+        
+        # Definir proporção quadrada para o mapa principal
+        ax_main.set_aspect('equal')
         
         # Configurar ticks em graus, minutos e segundos
         def format_coord(x, pos):
@@ -107,10 +125,18 @@ class MapGenerator:
             spine.set_edgecolor('#606060')
             spine.set_linewidth(1)
         
-
+        # Adicionar legenda
+        ax_main.legend(gdf.geometry.name, loc='lower left', bbox_to_anchor=(0.05, 0.05))
+        
+        # Ajustar layout do mapa principal
+        fig_main.tight_layout()
+        
+        # 2. Figura para os mapas auxiliares
+        fig_aux = plt.figure(figsize=(4, 8))  # Metade da largura do mapa principal
+        gs_aux = gridspec.GridSpec(2, 1, height_ratios=[1, 1], hspace=0.3)
         
         # Mapa do estado
-        ax_state = fig.add_subplot(gs[0, 1])
+        ax_state = fig_aux.add_subplot(gs_aux[0, 0])
         if containing_state is not None:
             # Criar GeoDataFrame para o estado
             state_gdf = gpd.GeoDataFrame(geometry=[containing_state.geometry], crs='EPSG:4326')
@@ -140,7 +166,7 @@ class MapGenerator:
             spine.set_linewidth(1)
         
         # Mapa do país
-        ax_country = fig.add_subplot(gs[1, 1])
+        ax_country = fig_aux.add_subplot(gs_aux[1, 0])
         
         # Ajustar zoom para mostrar todo o Brasil
         country_bounds = states_web.total_bounds
@@ -169,34 +195,69 @@ class MapGenerator:
             spine.set_edgecolor('#606060')
             spine.set_linewidth(1)
         
-
-        
-        # Adicionar título principal
-        plt.suptitle('MAPA DE LOCALIZAÇÃO', fontsize=14, fontweight='bold', y=0.95)
-        
         # Adicionar rosa dos ventos
         try:
             north_arrow_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'north_arrow.png')
             north_arrow = plt.imread(north_arrow_path)
-            newax = fig.add_axes([0.85, 0.15, 0.1, 0.1], anchor='SE', zorder=2)
+            newax = fig_aux.add_axes([0.7, 0.15, 0.2, 0.2], anchor='SE', zorder=2)
             newax.imshow(north_arrow)
             newax.axis('off')
         except Exception as e:
             logger.error(f"Erro ao adicionar rosa dos ventos: {str(e)}")
         
-        # Adicionar legenda
-        ax_main.legend(gdf.geometry.name, loc='lower left', bbox_to_anchor=(0.05, 0.05))
+        # Ajustar layout dos mapas auxiliares
+        fig_aux.tight_layout()
         
-        # Ajustar layout
-        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        # Salvar as figuras em arquivos temporários
+        temp_dir = tempfile.mkdtemp()
+        main_path = os.path.join(temp_dir, 'main.png')
+        aux_path = os.path.join(temp_dir, 'aux.png')
         
-        # Salvar como PNG
+        fig_main.savefig(main_path, dpi=300, bbox_inches='tight')
+        fig_aux.savefig(aux_path, dpi=300, bbox_inches='tight')
+        
+        plt.close(fig_main)
+        plt.close(fig_aux)
+        
+        # Combinar as imagens lado a lado
+        main_img = Image.open(main_path)
+        aux_img = Image.open(aux_path)
+        
+        # Redimensionar a imagem auxiliar para ter a mesma altura que a imagem principal
+        aux_img = aux_img.resize((int(aux_img.width * main_img.height / aux_img.height), main_img.height))
+        
+        # Criar uma nova imagem com largura combinada
+        combined_width = main_img.width + aux_img.width
+        combined_height = main_img.height
+        combined_img = Image.new('RGB', (combined_width, combined_height + 50), color='white')
+        
+        # Adicionar título
+        from PIL import ImageDraw, ImageFont
+        draw = ImageDraw.Draw(combined_img)
+        try:
+            # Tentar carregar uma fonte
+            font = ImageFont.truetype("arial.ttf", 36)
+        except:
+            # Se não conseguir, usar a fonte padrão
+            font = ImageFont.load_default()
+        
+        draw.text((combined_width // 2, 25), 'MAPA DE LOCALIZAÇÃO', fill='black', font=font, anchor='mm')
+        
+        # Colar as imagens
+        combined_img.paste(main_img, (0, 50))
+        combined_img.paste(aux_img, (main_img.width, 50))
+        
+        # Salvar a imagem combinada
         filename = f'{self.project.id}_map.png'
         output_path = os.path.join(settings.MEDIA_ROOT, 'generated_maps', filename)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
-        plt.close()
+        combined_img.save(output_path, dpi=(300, 300))
+        
+        # Limpar arquivos temporários
+        os.remove(main_path)
+        os.remove(aux_path)
+        os.rmdir(temp_dir)
         
         return output_path
     
@@ -220,7 +281,7 @@ class MapGenerator:
                 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
                 <style>
                     .map-container {{ display: flex; }}
-                    #main-map {{ height: 800px; width: 800px; }}
+                    #main-map {{ height: 800px; width: 800px; aspect-ratio: 1/1; }}
                     #state-map {{ height: 400px; width: 400px; margin-left: 20px; }}
                     #country-map {{ height: 400px; width: 400px; margin-left: 20px; margin-top: 20px; }}
                 </style>

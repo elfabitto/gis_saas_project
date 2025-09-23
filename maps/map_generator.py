@@ -47,13 +47,20 @@ class MapGenerator:
         import matplotlib.gridspec as gridspec
         import requests
         import geopandas as gpd
+        import contextily as ctx
         
         # Carregar dados
         gdf = self._load_project_data()
         
+        # Reprojetar para Web Mercator para compatibilidade com tiles
+        gdf_web = gdf.to_crs(epsg=3857)
+        
         # Carregar dados do Brasil
         states_url = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
         states_gdf = gpd.read_file(states_url)
+        states_web = states_gdf.to_crs(epsg=3857)
+        
+
         
         # Encontrar o estado que contém o polígono
         containing_state = None
@@ -68,11 +75,20 @@ class MapGenerator:
         
         # Mapa principal
         ax_main = fig.add_subplot(gs[:, 0])
-        states_gdf.plot(ax=ax_main, color='#e0e0e0', edgecolor='#606060', alpha=0.5)
-        gdf.plot(ax=ax_main, color=self.config.primary_color, edgecolor=self.config.secondary_color)
-        ax_main.grid(True, linestyle='--', alpha=0.6)
+        
+        # Ajustar zoom do mapa principal
+        bounds = gdf_web.total_bounds
+        margin = 1000  # margem em metros
+        ax_main.set_xlim([bounds[0] - margin, bounds[2] + margin])
+        ax_main.set_ylim([bounds[1] - margin, bounds[3] + margin])
+        
+        # Adicionar fundo do OpenStreetMap
+        ctx.add_basemap(ax_main, source=ctx.providers.OpenStreetMap.Mapnik)
+        
+        # Plotar dados por cima
+        states_web.plot(ax=ax_main, color='#e0e0e0', edgecolor='#606060', alpha=0.3)
+        gdf_web.plot(ax=ax_main, color=self.config.primary_color, edgecolor=self.config.secondary_color)
         ax_main.set_title('Mapa Principal', pad=10, fontsize=12)
-        ax_main.set_aspect('equal')
         
         # Configurar ticks em graus, minutos e segundos
         def format_coord(x, pos):
@@ -91,23 +107,25 @@ class MapGenerator:
             spine.set_edgecolor('#606060')
             spine.set_linewidth(1)
         
-        # Ajustar zoom do mapa principal (mais próximo)
-        bounds = gdf.total_bounds
-        margin = 0.02  # Margem menor para aproximar mais
-        ax_main.set_xlim([bounds[0] - margin, bounds[2] + margin])
-        ax_main.set_ylim([bounds[1] - margin, bounds[3] + margin])
+
         
         # Mapa do estado
         ax_state = fig.add_subplot(gs[0, 1])
-        states_gdf.plot(ax=ax_state, color='#e0e0e0', edgecolor='#606060', alpha=0.5)
         if containing_state is not None:
             # Criar GeoDataFrame para o estado
-            state_gdf = gpd.GeoDataFrame(geometry=[containing_state.geometry])
-            state_gdf.plot(ax=ax_state, color='#d0d0d0', edgecolor='#404040')
-            gdf.plot(ax=ax_state, color=self.config.primary_color, edgecolor=self.config.secondary_color)
-            state_bounds = containing_state.geometry.bounds
-            ax_state.set_xlim([state_bounds[0] - 0.1, state_bounds[2] + 0.1])
-            ax_state.set_ylim([state_bounds[1] - 0.1, state_bounds[3] + 0.1])
+            state_gdf = gpd.GeoDataFrame(geometry=[containing_state.geometry], crs='EPSG:4326')
+            state_web = state_gdf.to_crs(epsg=3857)
+            state_bounds = state_web.total_bounds
+            margin = 1000  # margem em metros
+            ax_state.set_xlim([state_bounds[0] - margin, state_bounds[2] + margin])
+            ax_state.set_ylim([state_bounds[1] - margin, state_bounds[3] + margin])
+            
+            # Adicionar fundo do OpenStreetMap
+            ctx.add_basemap(ax_state, source=ctx.providers.OpenStreetMap.Mapnik)
+            
+            # Plotar dados por cima
+            state_web.plot(ax=ax_state, color='#d0d0d0', edgecolor='#404040', alpha=0.3)
+            gdf_web.plot(ax=ax_state, color=self.config.primary_color, edgecolor=self.config.secondary_color)
         ax_state.grid(True, linestyle='--', alpha=0.6)
         ax_state.set_title('Mapa do Estado', pad=10, fontsize=12)
         ax_state.set_aspect('equal')
@@ -123,12 +141,21 @@ class MapGenerator:
         
         # Mapa do país
         ax_country = fig.add_subplot(gs[1, 1])
-        states_gdf.plot(ax=ax_country, color='#e0e0e0', edgecolor='#606060', alpha=0.5)
+        
+        # Ajustar zoom para mostrar todo o Brasil
+        country_bounds = states_web.total_bounds
+        margin = 50000  # margem maior para o país
+        ax_country.set_xlim([country_bounds[0] - margin, country_bounds[2] + margin])
+        ax_country.set_ylim([country_bounds[1] - margin, country_bounds[3] + margin])
+        
+        # Adicionar fundo do OpenStreetMap
+        ctx.add_basemap(ax_country, source=ctx.providers.OpenStreetMap.Mapnik)
+        
+        # Plotar dados por cima
+        states_web.plot(ax=ax_country, color='#e0e0e0', edgecolor='#606060', alpha=0.3)
         if containing_state is not None:
-            # Criar GeoDataFrame para o estado
-            state_gdf = gpd.GeoDataFrame(geometry=[containing_state.geometry])
-            state_gdf.plot(ax=ax_country, color='#d0d0d0', edgecolor='#404040')
-        gdf.plot(ax=ax_country, color=self.config.primary_color, edgecolor=self.config.secondary_color)
+            state_web.plot(ax=ax_country, color='#d0d0d0', edgecolor='#404040', alpha=0.3)
+        gdf_web.plot(ax=ax_country, color=self.config.primary_color, edgecolor=self.config.secondary_color)
         ax_country.grid(True, linestyle='--', alpha=0.6)
         ax_country.set_title('Mapa do País', pad=10, fontsize=12)
         ax_country.set_aspect('equal')
@@ -142,10 +169,7 @@ class MapGenerator:
             spine.set_edgecolor('#606060')
             spine.set_linewidth(1)
         
-        # Ajustar zoom do mapa do país para mostrar todo o Brasil
-        country_bounds = states_gdf.total_bounds
-        ax_country.set_xlim([country_bounds[0] - 1, country_bounds[2] + 1])
-        ax_country.set_ylim([country_bounds[1] - 1, country_bounds[3] + 1])
+
         
         # Adicionar título principal
         plt.suptitle('MAPA DE LOCALIZAÇÃO', fontsize=14, fontweight='bold', y=0.95)
@@ -217,13 +241,36 @@ class MapGenerator:
                     var stateMap = L.map('state-map').setView([{center_lat}, {center_lon}], 4);
                     var countryMap = L.map('country-map').setView([-14.235, -51.925], 4);
 
-                    // Adicionar camadas base OpenStreetMap
-                    var osmLayer = 'https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png';
-                    var osmAttrib = '© OpenStreetMap contributors';
+                    // Adicionar diferentes camadas do OpenStreetMap
+                    var osmStandard = L.tileLayer('https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+                        "attribution": '© OpenStreetMap contributors',
+                        "maxZoom": 19
+                    }});
                     
-                    L.tileLayer(osmLayer, {{attribution: osmAttrib}}).addTo(mainMap);
-                    L.tileLayer(osmLayer, {{attribution: osmAttrib}}).addTo(stateMap);
-                    L.tileLayer(osmLayer, {{attribution: osmAttrib}}).addTo(countryMap);
+                    var osmHumanitarian = L.tileLayer('https://{{s}}.tile.openstreetmap.fr/hot/{{z}}/{{x}}/{{y}}.png', {{
+                        "attribution": '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team',
+                        "maxZoom": 19
+                    }});
+                    
+                    var osmTransport = L.tileLayer('https://{{s}}.tile.thunderforest.com/transport/{{z}}/{{x}}/{{y}}.png', {{
+                        "attribution": '© OpenStreetMap contributors, Maps © Thunderforest',
+                        "maxZoom": 19
+                    }});
+                    
+                    // Adicionar controle de camadas
+                    var baseMaps = {{
+                        "OSM Padrão": osmStandard,
+                        "OSM Humanitário": osmHumanitarian,
+                        "OSM Transporte": osmTransport
+                    }};
+                    
+                    // Adicionar camadas aos mapas
+                    osmStandard.addTo(mainMap);
+                    osmStandard.addTo(stateMap);
+                    osmStandard.addTo(countryMap);
+                    
+                    // Adicionar controle de camadas apenas ao mapa principal
+                    L.control.layers(baseMaps).addTo(mainMap);
 
                     // Carregar dados de municípios e estados
                     var loadData = Promise.all([

@@ -1,0 +1,616 @@
+/* CSS específico para Detalhes do Projeto - Seguindo padrão geotecnológico */
+
+/* Usando as mesmas variáveis da home */
+:root {
+    --geo-primary: #6366F1;
+    --geo-secondary: #8B5CF6;
+    --geo-accent: #A855F7;
+    --geo-highlight: #EC4899;
+    --geo-dark: #1F2937;
+    --geo-light: #F9FAFB;
+    --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-strong: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Container principal */
+.projeto_detalhes-container {
+    background: var(--geo-light);
+    min-height: calc(100vh - 200px);
+    padding: 2rem 0;
+}
+
+/* Breadcrumb customizado */
+.projeto_detalhes-breadcrumb {
+    background: white;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid #E5E7EB;
+}
+
+.projeto_detalhes-breadcrumb .breadcrumb {
+    margin: 0;
+    background: none;
+    padding: 0;
+}
+
+.projeto_detalhes-breadcrumb .breadcrumb-item a {
+    color: var(--geo-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.projeto_detalhes-breadcrumb .breadcrumb-item a:hover {
+    color: var(--geo-secondary);
+    text-decoration: underline;
+}
+
+.projeto_detalhes-breadcrumb .breadcrumb-item.active {
+    color: var(--geo-dark);
+    font-weight: 600;
+}
+
+/* Cabeçalho do projeto */
+.projeto_detalhes-header {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid #E5E7EB;
+    margin-bottom: 2rem;
+}
+
+.projeto_detalhes-header h1 {
+    color: var(--geo-dark);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+}
+
+.projeto_detalhes-header p {
+    color: #6B7280;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.projeto_detalhes-btn-acoes {
+    background: var(--geo-primary);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    color: white;
+    box-shadow: var(--shadow-soft);
+}
+
+.projeto_detalhes-btn-acoes:hover {
+    background: var(--geo-secondary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+    color: white;
+}
+
+/* Cards de informações */
+.projeto_detalhes-info-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid #E5E7EB;
+    transition: all 0.3s ease;
+    height: 100%;
+    overflow: hidden;
+}
+
+.projeto_detalhes-info-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+    border-color: var(--geo-primary);
+}
+
+.projeto_detalhes-info-card .card-body {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.projeto_detalhes-info-card i {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.projeto_detalhes-info-card .text-primary {
+    color: var(--geo-primary) !important;
+}
+
+.projeto_detalhes-info-card .text-success {
+    color: #22C55E !important;
+}
+
+.projeto_detalhes-info-card .text-info {
+    color: var(--geo-secondary) !important;
+}
+
+.projeto_detalhes-info-card .text-warning {
+    color: #F59E0B !important;
+}
+
+.projeto_detalhes-info-card:hover i {
+    transform: scale(1.1);
+}
+
+.projeto_detalhes-info-card h5 {
+    color: var(--geo-dark);
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.projeto_detalhes-info-card p {
+    color: #6B7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Cards principais */
+.projeto_detalhes-main-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid #E5E7EB;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.projeto_detalhes-card-header {
+    background: linear-gradient(135deg, var(--geo-primary) 0%, var(--geo-secondary) 100%);
+    color: white;
+    padding: 1.5rem;
+    border-bottom: none;
+}
+
+.projeto_detalhes-card-header h5 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.projeto_detalhes-card-header .btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.projeto_detalhes-card-header .btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.projeto_detalhes-card-body {
+    padding: 2rem;
+}
+
+/* Lista de arquivos */
+.projeto_detalhes-file-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.projeto_detalhes-file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #F3F4F6;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+    background: #FAFBFC;
+}
+
+.projeto_detalhes-file-item:hover {
+    border-color: var(--geo-primary);
+    background: rgba(99, 102, 241, 0.02);
+    transform: translateX(5px);
+}
+
+.projeto_detalhes-file-info h6 {
+    color: var(--geo-dark);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+}
+
+.projeto_detalhes-file-meta {
+    color: #6B7280;
+    font-size: 0.85rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.projeto_detalhes-file-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Estado vazio */
+.projeto_detalhes-empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+}
+
+.projeto_detalhes-empty-state i {
+    color: #D1D5DB;
+    margin-bottom: 1.5rem;
+}
+
+.projeto_detalhes-empty-state p {
+    color: #6B7280;
+    margin-bottom: 1.5rem;
+}
+
+.projeto_detalhes-empty-state .btn {
+    background: var(--geo-primary);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.projeto_detalhes-empty-state .btn:hover {
+    background: var(--geo-secondary);
+    transform: translateY(-1px);
+    color: white;
+}
+
+/* Badges de status */
+.projeto_detalhes-status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.projeto_detalhes-status-badge.bg-success {
+    background: rgba(34, 197, 94, 0.1) !important;
+    color: #16A34A;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.projeto_detalhes-status-badge.bg-warning {
+    background: rgba(251, 191, 36, 0.1) !important;
+    color: #D97706;
+    border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.projeto_detalhes-status-badge.bg-danger {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #DC2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Dropdown de ações */
+.projeto_detalhes-dropdown-toggle {
+    background: transparent;
+    border: 1px solid #E5E7EB;
+    color: #6B7280;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.projeto_detalhes-dropdown-toggle:hover {
+    border-color: var(--geo-primary);
+    color: var(--geo-primary);
+}
+
+.projeto_detalhes-dropdown-menu {
+    border: none;
+    box-shadow: var(--shadow-medium);
+    border-radius: 8px;
+    padding: 0.5rem 0;
+}
+
+.projeto_detalhes-dropdown-item {
+    padding: 0.75rem 1rem;
+    color: var(--geo-dark);
+    transition: all 0.2s ease;
+}
+
+.projeto_detalhes-dropdown-item:hover {
+    background: rgba(99, 102, 241, 0.05);
+    color: var(--geo-primary);
+}
+
+.projeto_detalhes-dropdown-item.text-danger:hover {
+    background: rgba(239, 68, 68, 0.05);
+    color: #DC2626;
+}
+
+/* Configuração do mapa */
+.projeto_detalhes-config-section {
+    background: rgba(99, 102, 241, 0.02);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.projeto_detalhes-config-section h6 {
+    color: var(--geo-dark);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.projeto_detalhes-config-section p {
+    color: #6B7280;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+}
+
+.projeto_detalhes-config-section .badge {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+}
+
+.projeto_detalhes-color-badge {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal de geração de mapa */
+.projeto_detalhes-modal .modal-content {
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--shadow-strong);
+}
+
+.projeto_detalhes-modal .modal-header {
+    background: linear-gradient(135deg, var(--geo-primary) 0%, var(--geo-secondary) 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    padding: 1.5rem;
+}
+
+.projeto_detalhes-modal .modal-title {
+    font-weight: 600;
+    margin: 0;
+}
+
+.projeto_detalhes-modal .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+.projeto_detalhes-modal .modal-body {
+    padding: 2rem;
+}
+
+.projeto_detalhes-modal .card {
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.projeto_detalhes-modal .card:hover {
+    border-color: var(--geo-primary);
+    box-shadow: var(--shadow-soft);
+    transform: translateY(-2px);
+}
+
+.projeto_detalhes-modal .card-header {
+    font-weight: 600;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.projeto_detalhes-modal .card-header.bg-primary {
+    background: var(--geo-primary) !important;
+}
+
+.projeto_detalhes-modal .card-header.bg-secondary {
+    background: #6B7280 !important;
+}
+
+.projeto_detalhes-modal .card-body {
+    padding: 1.5rem;
+}
+
+.projeto_detalhes-modal .btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.projeto_detalhes-modal .btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .projeto_detalhes-container {
+        padding: 1rem 0;
+    }
+    
+    .projeto_detalhes-header {
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .projeto_detalhes-header .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .projeto_detalhes-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .projeto_detalhes-btn-acoes {
+        width: 100%;
+    }
+    
+    .projeto_detalhes-info-card {
+        margin-bottom: 1rem;
+    }
+    
+    .projeto_detalhes-card-body {
+        padding: 1.5rem;
+    }
+    
+    .projeto_detalhes-file-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .projeto_detalhes-file-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .projeto_detalhes-config-section {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .projeto_detalhes-breadcrumb {
+        padding: 0.5rem;
+    }
+    
+    .projeto_detalhes-header {
+        padding: 1rem;
+    }
+    
+    .projeto_detalhes-info-card .card-body {
+        padding: 1rem;
+    }
+    
+    .projeto_detalhes-info-card i {
+        font-size: 2rem;
+    }
+    
+    .projeto_detalhes-card-header {
+        padding: 1rem;
+    }
+    
+    .projeto_detalhes-card-body {
+        padding: 1rem;
+    }
+    
+    .projeto_detalhes-empty-state {
+        padding: 2rem 1rem;
+    }
+    
+    .projeto_detalhes-modal .modal-body {
+        padding: 1rem;
+    }
+}
+
+/* Animações */
+.projeto_detalhes-fade-in {
+    animation: projetoDetalhesFadeIn 0.5s ease-out;
+}
+
+@keyframes projetoDetalhesFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.projeto_detalhes-slide-up {
+    animation: projetoDetalhesSlideUp 0.4s ease-out;
+}
+
+@keyframes projetoDetalhesSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Efeitos especiais */
+.projeto_detalhes-main-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--geo-primary) 0%, var(--geo-secondary) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.projeto_detalhes-main-card:hover::before {
+    opacity: 1;
+}
+
+/* Melhorias visuais */
+.projeto_detalhes-file-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--geo-primary);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 8px 0 0 8px;
+}
+
+.projeto_detalhes-file-item:hover::before {
+    opacity: 1;
+}
+
+.projeto_detalhes-file-item {
+    position: relative;
+}
+
+/* Gradientes para cards especiais */
+.projeto_detalhes-card-vibrante {
+    background: linear-gradient(135deg, #FF6B35 0%, #FF1744 100%);
+}
+
+.projeto_detalhes-card-moderno {
+    background: linear-gradient(135deg, var(--geo-primary) 0%, var(--geo-secondary) 100%);
+}
+
+.projeto_detalhes-card-classico {
+    background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+}

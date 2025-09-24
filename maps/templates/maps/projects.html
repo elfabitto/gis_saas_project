@@ -1,85 +1,95 @@
 {% extends 'maps/base.html' %}
 {% load static %}
 
-{% block title %}Meus Projetos - GIS SaaS{% endblock %}
+{% block title %}Meus Projetos - MapaFácil{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/pages/projetos.css' %}" rel="stylesheet">
+{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h1><i class="fas fa-folder me-2"></i>Meus Projetos</h1>
-                    <p class="text-muted">Gerencie seus projetos de mapas</p>
+<div class="projetos-container">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4 projetos-header">
+                    <div>
+                        <h1><i class="fas fa-folder me-2"></i>Meus Projetos</h1>
+                        <p>Gerencie seus projetos de mapas</p>
+                    </div>
+                    <a href="{% url 'new_project' %}" class="projetos-btn-novo">
+                        <i class="fas fa-plus me-2"></i>Novo Projeto
+                    </a>
                 </div>
-                <a href="{% url 'new_project' %}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Novo Projeto
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="projetos-filtros">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="projetos-input-group input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="projetos-search-input form-control" id="search-input" 
+                               placeholder="Buscar projetos...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="projetos-select form-select" id="status-filter">
+                        <option value="">Todos os status</option>
+                        <option value="active">Ativos</option>
+                        <option value="completed">Concluídos</option>
+                        <option value="processing">Processando</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="projetos-select form-select" id="sort-by">
+                        <option value="created_at">Mais recentes</option>
+                        <option value="name">Nome A-Z</option>
+                        <option value="updated_at">Última modificação</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Grid -->
+        <div class="row projetos-fade-in" id="projects-container">
+            <!-- Loading state -->
+            <div class="col-12 projetos-loading-state" id="loading-state">
+                <div class="projetos-loading"></div>
+                <p class="projetos-loading-text">Carregando projetos...</p>
+            </div>
+        </div>
+
+        <!-- Empty state -->
+        <div class="row d-none" id="empty-state">
+            <div class="col-12 projetos-empty-state">
+                <i class="fas fa-folder-open fa-4x mb-3"></i>
+                <h3>Nenhum projeto encontrado</h3>
+                <p>Comece criando seu primeiro projeto de mapa.</p>
+                <a href="{% url 'new_project' %}" class="projetos-btn-novo">
+                    <i class="fas fa-plus me-2"></i>Criar Primeiro Projeto
                 </a>
             </div>
         </div>
-    </div>
 
-    <!-- Filters and Search -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="input-group">
-                <span class="input-group-text">
-                    <i class="fas fa-search"></i>
-                </span>
-                <input type="text" class="form-control" id="search-input" 
-                       placeholder="Buscar projetos...">
+        <!-- Pagination -->
+        <div class="projetos-pagination">
+            <div class="row">
+                <div class="col-12">
+                    <nav aria-label="Navegação de projetos" id="pagination-container">
+                        <!-- Pagination will be inserted here -->
+                    </nav>
+                </div>
             </div>
-        </div>
-        <div class="col-md-3">
-            <select class="form-select" id="status-filter">
-                <option value="">Todos os status</option>
-                <option value="active">Ativos</option>
-                <option value="completed">Concluídos</option>
-                <option value="processing">Processando</option>
-            </select>
-        </div>
-        <div class="col-md-3">
-            <select class="form-select" id="sort-by">
-                <option value="created_at">Mais recentes</option>
-                <option value="name">Nome A-Z</option>
-                <option value="updated_at">Última modificação</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- Projects Grid -->
-    <div class="row" id="projects-container">
-        <!-- Loading state -->
-        <div class="col-12 text-center" id="loading-state">
-            <div class="loading"></div>
-            <p class="mt-2">Carregando projetos...</p>
-        </div>
-    </div>
-
-    <!-- Empty state -->
-    <div class="row d-none" id="empty-state">
-        <div class="col-12 text-center py-5">
-            <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
-            <h3>Nenhum projeto encontrado</h3>
-            <p class="text-muted">Comece criando seu primeiro projeto de mapa.</p>
-            <a href="{% url 'new_project' %}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Criar Primeiro Projeto
-            </a>
-        </div>
-    </div>
-
-    <!-- Pagination -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <nav aria-label="Navegação de projetos" id="pagination-container">
-                <!-- Pagination will be inserted here -->
-            </nav>
         </div>
     </div>
 </div>
 
 <!-- Project Actions Modal -->
-<div class="modal fade" id="projectModal" tabindex="-1">
+<div class="modal fade projetos-modal" id="projectModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -151,61 +161,65 @@ function createProjectCard(project) {
     const updatedDate = new Date(project.updated_at).toLocaleDateString('pt-BR');
     
     return `
-        <div class="col-lg-4 col-md-6 mb-4">
-            <div class="project-card">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h5 class="mb-0">${project.name}</h5>
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-outline-secondary" type="button" 
-                                data-bs-toggle="dropdown">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/project/${project.id}/">
-                                <i class="fas fa-eye me-2"></i>Ver Projeto
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="editProject('${project.id}')">
-                                <i class="fas fa-edit me-2"></i>Editar
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="generateMapModal('${project.id}')">
-                                <i class="fas fa-map me-2"></i>Gerar Mapa
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteProject('${project.id}')">
-                                <i class="fas fa-trash me-2"></i>Excluir
-                            </a></li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <p class="text-muted">${project.description || 'Sem descrição'}</p>
-                
-                <div class="row text-center mb-3">
-                    <div class="col-4">
-                        <div class="border-end">
-                            <strong>${project.uploaded_files_count}</strong>
-                            <br><small class="text-muted">Arquivos</small>
+        <div class="col-lg-4 col-md-6 mb-4 projetos-slide-up">
+            <div class="projetos-card">
+                <div class="projetos-card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="mb-0">${project.name}</h5>
+                        <div class="dropdown">
+                            <button class="projetos-dropdown-toggle btn btn-sm" type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="projetos-dropdown-menu dropdown-menu">
+                                <li><a class="projetos-dropdown-item dropdown-item" href="/project/${project.id}/">
+                                    <i class="fas fa-eye me-2"></i>Ver Projeto
+                                </a></li>
+                                <li><a class="projetos-dropdown-item dropdown-item" href="#" onclick="editProject('${project.id}')">
+                                    <i class="fas fa-edit me-2"></i>Editar
+                                </a></li>
+                                <li><a class="projetos-dropdown-item dropdown-item" href="#" onclick="generateMapModal('${project.id}')">
+                                    <i class="fas fa-map me-2"></i>Gerar Mapa
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="projetos-dropdown-item dropdown-item text-danger" href="#" onclick="deleteProject('${project.id}')">
+                                    <i class="fas fa-trash me-2"></i>Excluir
+                                </a></li>
+                            </ul>
                         </div>
                     </div>
-                    <div class="col-4">
-                        <div class="border-end">
-                            <strong>0</strong>
-                            <br><small class="text-muted">Mapas</small>
+                    
+                    <p>${project.description || 'Sem descrição'}</p>
+                    
+                    <div class="projetos-card-stats">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="border-end">
+                                    <strong>${project.uploaded_files_count}</strong>
+                                    <br><small>Arquivos</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border-end">
+                                    <strong>0</strong>
+                                    <br><small>Mapas</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <span class="projetos-status status-active">Ativo</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-4">
-                        <span class="project-status status-active">Ativo</span>
+                    
+                    <div class="projetos-card-footer">
+                        <div class="projetos-card-date">
+                            <i class="fas fa-calendar"></i>
+                            <span>Criado em ${createdDate}</span>
+                        </div>
+                        <a href="/project/${project.id}/" class="projetos-btn-ver">
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
                     </div>
-                </div>
-                
-                <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted">
-                        <i class="fas fa-calendar me-1"></i>
-                        Criado em ${createdDate}
-                    </small>
-                    <a href="/project/${project.id}/" class="btn btn-sm btn-primary">
-                        <i class="fas fa-arrow-right"></i>
-                    </a>
                 </div>
             </div>
         </div>
@@ -374,4 +388,3 @@ function debounce(func, wait) {
 }
 </script>
 {% endblock %}
-

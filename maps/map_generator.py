@@ -222,8 +222,18 @@ class MapGenerator:
         
         # Adicionar rosa dos ventos no canto superior esquerdo do mapa principal
         try:
-            north_arrow_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'north_arrow.png')
-            north_arrow = plt.imread(north_arrow_path)
+            north_arrow_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'rosa-dos-ventos.png')
+            # Usar PIL para carregar a imagem corretamente
+            from PIL import Image as PILImage
+            import numpy as np
+            
+            # Carregar imagem com PIL e converter para array numpy
+            pil_image = PILImage.open(north_arrow_path)
+            # Converter para RGBA se necessário
+            if pil_image.mode != 'RGBA':
+                pil_image = pil_image.convert('RGBA')
+            north_arrow = np.array(pil_image)
+            
             # Posicionar no canto superior esquerdo do mapa principal
             # [left, bottom, width, height] - coordenadas relativas à figura principal
             newax = fig_main.add_axes([0.05, 0.8, 0.15, 0.15], anchor='NW', zorder=2)

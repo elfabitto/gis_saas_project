@@ -108,15 +108,40 @@ class MapGenerator:
         # Definir proporção quadrada para o mapa principal
         ax_main.set_aspect('equal')
         
-        # Configurar ticks em graus, minutos e segundos
-        def format_coord(x, pos):
-            degrees = int(abs(x))
-            minutes = int((abs(x) - degrees) * 60)
-            seconds = int(((abs(x) - degrees) * 60 - minutes) * 60)
-            return f"{degrees}°{minutes}'{seconds}\""
+        # Função para converter coordenadas de Web Mercator para WGS84
+        from pyproj import Transformer
+        transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
+        
+        # Função para formatar coordenadas em graus, minutos e segundos
+        def format_coord(x, pos, is_x_axis=True):
+            # Converter de Web Mercator (EPSG:3857) para WGS84 (EPSG:4326)
+            if is_x_axis:
+                # Para eixo X (longitude)
+                lon, _ = transformer.transform(x, 0)
+                x_wgs84 = lon
+            else:
+                # Para eixo Y (latitude)
+                _, lat = transformer.transform(0, x)
+                x_wgs84 = lat
             
-        ax_main.xaxis.set_major_formatter(plt.FuncFormatter(format_coord))
-        ax_main.yaxis.set_major_formatter(plt.FuncFormatter(format_coord))
+            # Formatar em graus, minutos e segundos
+            is_negative = x_wgs84 < 0
+            x_abs = abs(x_wgs84)
+            degrees = int(x_abs)
+            minutes = int((x_abs - degrees) * 60)
+            seconds = int(((x_abs - degrees) * 60 - minutes) * 60)
+            
+            # Adicionar sinal negativo se necessário
+            sign = "-" if is_negative else ""
+            return f"{sign}{degrees}°{minutes}'{seconds}\""
+            
+        # Usar functools.partial para criar funções parciais com is_x_axis definido
+        from functools import partial
+        format_x = partial(format_coord, is_x_axis=True)
+        format_y = partial(format_coord, is_x_axis=False)
+        
+        ax_main.xaxis.set_major_formatter(plt.FuncFormatter(format_x))
+        ax_main.yaxis.set_major_formatter(plt.FuncFormatter(format_y))
         plt.setp(ax_main.get_xticklabels(), rotation=0, ha='right', fontsize=8)
         plt.setp(ax_main.get_yticklabels(), rotation=90, va='center', fontsize=8)
         ax_main.xaxis.set_major_locator(plt.MaxNLocator(5))
@@ -155,8 +180,8 @@ class MapGenerator:
         ax_state.grid(True, linestyle='--', alpha=0.6)
         # Título removido conforme solicitado
         ax_state.set_aspect('equal')
-        ax_state.xaxis.set_major_formatter(plt.FuncFormatter(format_coord))
-        ax_state.yaxis.set_major_formatter(plt.FuncFormatter(format_coord))
+        ax_state.xaxis.set_major_formatter(plt.FuncFormatter(format_x))
+        ax_state.yaxis.set_major_formatter(plt.FuncFormatter(format_y))
         plt.setp(ax_state.get_xticklabels(), rotation=0, ha='right', fontsize=8)
         plt.setp(ax_state.get_yticklabels(), rotation=90, va='center', fontsize=8)
         ax_state.xaxis.set_major_locator(plt.MaxNLocator(4))
@@ -185,8 +210,8 @@ class MapGenerator:
         ax_country.grid(True, linestyle='--', alpha=0.6)
         # Título removido conforme solicitado
         ax_country.set_aspect('equal')
-        ax_country.xaxis.set_major_formatter(plt.FuncFormatter(format_coord))
-        ax_country.yaxis.set_major_formatter(plt.FuncFormatter(format_coord))
+        ax_country.xaxis.set_major_formatter(plt.FuncFormatter(format_x))
+        ax_country.yaxis.set_major_formatter(plt.FuncFormatter(format_y))
         plt.setp(ax_country.get_xticklabels(), rotation=0, ha='right', fontsize=8)
         plt.setp(ax_country.get_yticklabels(), rotation=90, va='center', fontsize=8)
         ax_country.xaxis.set_major_locator(plt.MaxNLocator(4))
@@ -259,16 +284,9 @@ class MapGenerator:
         title_y = title_height // 2
         draw.text((combined_width // 2, title_y), 'MAPA DE LOCALIZAÇÃO', fill='black', font=font, anchor='mm')
         
-        # Adicionar linhas decorativas acima e abaixo do título
-        line_margin = 40
-        line_y_top = margin_top + 20
-        line_y_bottom = title_height - margin_bottom - 20
-        draw.line([(line_margin, line_y_top), (combined_width - line_margin, line_y_top)], 
-                  fill="#FFFFFF00", width=2)
-        draw.line([(line_margin, line_y_bottom), (combined_width - line_margin, line_y_bottom)], 
-                  fill="#FFFDFD00", width=2)
+        # Removidas as linhas decorativas que estavam passando pelo meio do texto do título
         
-        # Linha decorativa na borda inferior do título já adicionada acima
+        # Sem linhas decorativas na borda inferior do título
         
         # Colar as imagens abaixo do título
         combined_img.paste(main_img, (0, title_height))

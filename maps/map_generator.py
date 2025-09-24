@@ -14,8 +14,7 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from .models import GISProject, UploadedGISFile, MapConfiguration, GeneratedMap
 from .export_utils import (
-    MapExporter, optimize_export_quality, validate_export_parameters,
-    import_pdf_libs, import_html_libs
+    MapExporter, optimize_export_quality, validate_export_parameters
 )
 
 logger = logging.getLogger(__name__)
@@ -29,20 +28,17 @@ class MapGenerator:
         self.config = project.map_config
         self.gis_files = project.uploaded_files.all()
         
-    def generate_location_map(self, output_format: str = 'html') -> str:
+    def generate_location_map(self, output_format: str = 'png') -> str:
         """
         Gerar mapa de localização
         
         Args:
-            output_format: Formato de saída ('html', 'png', 'pdf')
+            output_format: Formato de saída ('png')
             
         Returns:
             Caminho do arquivo gerado
         """
-        if output_format == 'png':
-            return self.generate_static_map()
-        else:
-            return self.generate_interactive_map()
+        return self.generate_static_map()
             
     def generate_static_map(self) -> str:
         """Gerar mapa estático usando matplotlib"""
@@ -414,221 +410,6 @@ class MapGenerator:
         
         return output_path
     
-    def generate_interactive_map(self) -> str:
-        """Gerar mapa interativo usando Leaflet"""
-        try:
-            # Carregar dados GIS
-            gdf = self._load_project_data()
-            
-            # Obter bounds e centro
-            bounds = gdf.total_bounds
-            center_lat = (bounds[1] + bounds[3]) / 2
-            center_lon = (bounds[0] + bounds[2]) / 2
-            
-            # Criar HTML com três mapas Leaflet
-            html_content = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-                <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-                <style>
-                    .map-container {{ display: flex; }}
-                    #main-map {{ height: 800px; width: 800px; aspect-ratio: 1/1; }}
-                    #state-map {{ height: 400px; width: 400px; margin-left: 20px; }}
-                    #country-map {{ height: 400px; width: 400px; margin-left: 20px; margin-top: 20px; }}
-                </style>
-            </head>
-            <body>
-                <div class="map-container">
-                    <div id="main-map"></div>
-                    <div>
-                        <div id="state-map"></div>
-                        <div id="country-map"></div>
-                    </div>
-                </div>
-                <script>
-                    var geojson = {gdf.to_json()};
-                    
-                    // Inicializar mapas com centro inicial
-                    var mainMap = L.map('main-map').setView([{center_lat}, {center_lon}], 4);
-                    var stateMap = L.map('state-map').setView([{center_lat}, {center_lon}], 4);
-                    var countryMap = L.map('country-map').setView([-14.235, -51.925], 4);
-
-                    // Adicionar diferentes camadas do OpenStreetMap
-                    var osmStandard = L.tileLayer('https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-                        "attribution": '© OpenStreetMap contributors',
-                        "maxZoom": 19
-                    }});
-                    
-                    var osmHumanitarian = L.tileLayer('https://{{s}}.tile.openstreetmap.fr/hot/{{z}}/{{x}}/{{y}}.png', {{
-                        "attribution": '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team',
-                        "maxZoom": 19
-                    }});
-                    
-                    var osmTransport = L.tileLayer('https://{{s}}.tile.thunderforest.com/transport/{{z}}/{{x}}/{{y}}.png', {{
-                        "attribution": '© OpenStreetMap contributors, Maps © Thunderforest',
-                        "maxZoom": 19
-                    }});
-                    
-                    // Adicionar controle de camadas
-                    var baseMaps = {{
-                        "OSM Padrão": osmStandard,
-                        "OSM Humanitário": osmHumanitarian,
-                        "OSM Transporte": osmTransport
-                    }};
-                    
-                    // Adicionar camadas aos mapas
-                    osmStandard.addTo(mainMap);
-                    osmStandard.addTo(stateMap);
-                    osmStandard.addTo(countryMap);
-                    
-                    // Adicionar controle de camadas apenas ao mapa principal
-                    L.control.layers(baseMaps).addTo(mainMap);
-
-                    // Carregar dados de municípios e estados
-                    var loadData = Promise.all([
-                        fetch('https://raw.githubusercontent.com/tbrugz/geodata-br/master/geojson/geojs-100-mun.json').then(response => response.json()),
-                        fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson').then(response => response.json())
-                    ]);
-
-                    loadData.then(([municipios, estados]) => {{
-                        console.log('Dados carregados com sucesso');
-                        // Mapa principal
-                        L.geoJSON(municipios, {{
-                            style: {{
-                                fillColor: '#f0f0f0',
-                                color: '#808080',
-                                weight: 1,
-                                opacity: 0.5,
-                                fillOpacity: 0.2
-                            }}
-                        }}).addTo(mainMap);
-                        
-                        L.geoJSON(estados, {{
-                            style: {{
-                                fillColor: '#e0e0e0',
-                                color: '#606060',
-                                weight: 1.5,
-                                opacity: 0.7,
-                                fillOpacity: 0.1
-                            }}
-                        }}).addTo(mainMap);
-                        
-                        var kmlLayer = L.geoJSON(geojson, {{
-                            style: function(feature) {{
-                                return {{
-                                    fillColor: '{self.config.primary_color}',
-                                    color: '{self.config.secondary_color}',
-                                    weight: 2,
-                                    fillOpacity: 0.6
-                                }};
-                            }}
-                        }}).addTo(mainMap);
-                        mainMap.fitBounds(kmlLayer.getBounds());
-                        
-                        // Mapa do estado - encontrar e dar zoom no estado que contém o KML
-                        const stateLayer = L.geoJSON(estados, {{
-                            style: {{
-                                fillColor: '#e0e0e0',
-                                color: '#606060',
-                                weight: 1.5,
-                                opacity: 0.7,
-                                fillOpacity: 0.1
-                            }}
-                        }}).addTo(stateMap);
-
-                        // Encontrar o estado que contém o KML
-                        try {{
-                            // Primeiro, adicionar todos os estados ao mapa
-                            const statesLayer = L.geoJSON(estados, {{
-                                style: {{
-                                    fillColor: '#e0e0e0',
-                                    color: '#606060',
-                                    weight: 1.5,
-                                    opacity: 0.7,
-                                    fillOpacity: 0.1
-                                }},
-                                onEachFeature: function(feature, layer) {{
-                                    // Verificar se o KML intersecta com este estado
-                                    const kmlPolygon = L.geoJSON(geojson).getBounds();
-                                    const statePolygon = layer.getBounds();
-                                    
-                                    if (kmlPolygon.intersects(statePolygon)) {{
-                                        console.log('KML encontrado no estado:', feature.properties.name);
-                                        // Destacar o estado encontrado
-                                        layer.setStyle({{
-                                            fillColor: '#d0d0d0',
-                                            color: '#404040',
-                                            weight: 2,
-                                            opacity: 1,
-                                            fillOpacity: 0.2
-                                        }});
-                                        // Ajustar zoom para este estado
-                                        stateMap.fitBounds(statePolygon, {{padding: [20, 20]}});
-                                    }}
-                                }}
-                            }}).addTo(stateMap);
-                        }} catch (error) {{
-                            console.error('Erro ao processar estado:', error);
-                        }}
-
-                        // Adicionar KML por cima
-                        L.geoJSON(geojson, {{
-                            style: function(feature) {{
-                                return {{
-                                    fillColor: '{self.config.primary_color}',
-                                    color: '{self.config.secondary_color}',
-                                    weight: 2,
-                                    fillOpacity: 0.6
-                                }};
-                            }}
-                        }}).addTo(stateMap);
-                        
-                        // Mapa do país - mostrar todo o Brasil
-                        const countryLayer = L.geoJSON(estados, {{
-                            style: {{
-                                fillColor: '#e0e0e0',
-                                color: '#606060',
-                                weight: 1.5,
-                                opacity: 0.7,
-                                fillOpacity: 0.1
-                            }}
-                        }}).addTo(countryMap);
-                        
-                        // Ajustar zoom para mostrar todo o Brasil
-                        countryMap.fitBounds(countryLayer.getBounds());
-                        
-                        // Adicionar KML por cima
-                        L.geoJSON(geojson, {{
-                            style: function(feature) {{
-                                return {{
-                                    fillColor: '{self.config.primary_color}',
-                                    color: '{self.config.secondary_color}',
-                                    weight: 2,
-                                    fillOpacity: 0.6
-                                }};
-                            }}
-                        }}).addTo(countryMap);
-                    }}).catch(error => console.error('Erro ao carregar dados:', error));
-                </script>
-            </body>
-            </html>
-            """
-            
-            # Salvar HTML
-            filename = f'{self.project.id}_map.html'
-            output_path = os.path.join(settings.MEDIA_ROOT, 'generated_maps', filename)
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
-            
-            with open(output_path, 'w') as f:
-                f.write(html_content)
-            
-            return output_path
-                
-        except Exception as e:
-            logger.error(f"Erro na geração do mapa: {str(e)}")
-            raise
     
     def _load_project_data(self) -> gpd.GeoDataFrame:
         """Carregar e combinar dados GIS do projeto"""
@@ -654,17 +435,21 @@ class MapGenerator:
 
 
 
-def generate_map_for_project(project_id: str, output_format: str) -> GeneratedMap:
+def generate_map_for_project(project_id: str, output_format: str = 'png') -> GeneratedMap:
     """
     Função principal para gerar mapa de um projeto
     
     Args:
         project_id: ID do projeto
-        output_format: Formato de saída ('html', 'png', 'pdf')
+        output_format: Formato de saída ('png' apenas)
         
     Returns:
         Instância do GeneratedMap criada
     """
+    # Validar formato de saída
+    if output_format != 'png':
+        raise ValueError("Apenas o formato PNG é suportado")
+    
     try:
         # Obter projeto
         project = GISProject.objects.get(id=project_id)
@@ -681,12 +466,9 @@ def generate_map_for_project(project_id: str, output_format: str) -> GeneratedMa
         )
         
         try:
-            # Gerar mapa
+            # Gerar mapa PNG
             generator = MapGenerator(project)
-            if output_format == 'png':
-                output_path = generator.generate_static_map()
-            else:
-                output_path = generator.generate_interactive_map()
+            output_path = generator.generate_static_map()
             
             # Salvar arquivo no modelo
             with open(output_path, 'rb') as f:

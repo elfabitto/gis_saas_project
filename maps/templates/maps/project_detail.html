@@ -261,17 +261,9 @@
             <div class="modal-body">
                 <p>Escolha o formato de saída para o mapa:</p>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary" onclick="generateMap('html')">
-                        <i class="fas fa-globe me-2"></i>Mapa Interativo (HTML)
-                        <small class="d-block text-muted">Ideal para visualização online</small>
-                    </button>
-                    <button class="btn btn-outline-primary" onclick="generateMap('png')">
-                        <i class="fas fa-image me-2"></i>Imagem de Alta Qualidade (PNG)
-                        <small class="d-block text-muted">Ideal para apresentações e impressão</small>
-                    </button>
-                    <button class="btn btn-outline-primary" onclick="generateMap('pdf')">
-                        <i class="fas fa-file-pdf me-2"></i>Documento Profissional (PDF)
-                        <small class="d-block text-muted">Ideal para relatórios e documentos</small>
+                    <button class="btn btn-primary" onclick="generateMap('png')">
+                        <i class="fas fa-image me-2"></i>Gerar Mapa PNG
+                        <small class="d-block text-muted">Imagem de alta qualidade ideal para apresentações e impressão</small>
                     </button>
                 </div>
             </div>
@@ -343,4 +335,3 @@ function deleteProject() {
 }
 </script>
 {% endblock %}
-

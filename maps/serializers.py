@@ -134,7 +134,7 @@ class GeneratedMapSerializer(serializers.ModelSerializer):
 class MapGenerationRequestSerializer(serializers.Serializer):
     """Serializer para requisições de geração de mapas"""
     project_id = serializers.UUIDField()
-    output_format = serializers.ChoiceField(choices=['pdf', 'png', 'html'])
+    output_format = serializers.ChoiceField(choices=['png'], default='png')
     
     def validate_project_id(self, value):
         """Validar se o projeto existe e tem arquivos"""
@@ -147,4 +147,9 @@ class MapGenerationRequestSerializer(serializers.Serializer):
             return value
         except GISProject.DoesNotExist:
             raise serializers.ValidationError("Projeto não encontrado.")
-
+    
+    def validate_output_format(self, value):
+        """Validar formato de saída"""
+        if value != 'png':
+            raise serializers.ValidationError("Apenas o formato PNG é suportado.")
+        return value

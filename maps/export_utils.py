@@ -14,29 +14,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Importações condicionais para diferentes formatos
-def import_pdf_libs():
-    try:
-        from reportlab.lib.pagesizes import A4, letter
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch
-        from reportlab.lib import colors
-        from reportlab.lib.enums import TA_CENTER, TA_LEFT
-        from matplotlib.backends.backend_pdf import PdfPages
-        return True
-    except ImportError:
-        logger.warning("Bibliotecas PDF não encontradas")
-        return False
-
-def import_html_libs():
-    try:
-        from weasyprint import HTML, CSS
-        from django.template.loader import render_to_string
-        return True
-    except ImportError:
-        logger.warning("WeasyPrint não encontrado")
-        return False
 
 
 class MapExporter:
@@ -48,121 +25,6 @@ class MapExporter:
         self.output_dir = os.path.join(settings.MEDIA_ROOT, 'exports')
         os.makedirs(self.output_dir, exist_ok=True)
     
-    def export_to_pdf(self, map_figure, output_path: str = None) -> str:
-        """
-        Exportar mapa para PDF usando ReportLab
-        
-        Args:
-            map_figure: Figura matplotlib do mapa
-            output_path: Caminho de saída (opcional)
-            
-        Returns:
-            Caminho do arquivo PDF gerado
-        """
-        try:
-            if not output_path:
-                output_path = os.path.join(
-                    self.output_dir, 
-                    f'{self.project.id}_map.pdf'
-                )
-            
-            # Criar documento PDF
-            doc = SimpleDocTemplate(
-                output_path,
-                pagesize=A4,
-                rightMargin=72,
-                leftMargin=72,
-                topMargin=72,
-                bottomMargin=18
-            )
-            
-            # Preparar conteúdo
-            story = []
-            styles = getSampleStyleSheet()
-            
-            # Estilo personalizado para título
-            title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=styles['Heading1'],
-                fontSize=18,
-                spaceAfter=30,
-                alignment=TA_CENTER,
-                textColor=colors.HexColor(self.config.primary_color)
-            )
-            
-            # Adicionar título
-            title = Paragraph(self.config.title, title_style)
-            story.append(title)
-            
-            # Adicionar subtítulo se existir
-            if self.config.subtitle:
-                subtitle_style = ParagraphStyle(
-                    'CustomSubtitle',
-                    parent=styles['Heading2'],
-                    fontSize=14,
-                    spaceAfter=20,
-                    alignment=TA_CENTER,
-                    textColor=colors.grey
-                )
-                subtitle = Paragraph(self.config.subtitle, subtitle_style)
-                story.append(subtitle)
-            
-            story.append(Spacer(1, 20))
-            
-            # Converter figura matplotlib para imagem
-            map_image_path = self._save_figure_as_image(map_figure)
-            
-            # Adicionar imagem do mapa
-            img = RLImage(map_image_path, width=6*inch, height=4.5*inch)
-            story.append(img)
-            
-            story.append(Spacer(1, 20))
-            
-            # Adicionar informações adicionais
-            if self.config.additional_info:
-                info_style = ParagraphStyle(
-                    'InfoStyle',
-                    parent=styles['Normal'],
-                    fontSize=10,
-                    alignment=TA_LEFT,
-                    spaceAfter=10
-                )
-                info = Paragraph(self.config.additional_info, info_style)
-                story.append(info)
-            
-            # Adicionar metadados do projeto
-            metadata_style = ParagraphStyle(
-                'MetadataStyle',
-                parent=styles['Normal'],
-                fontSize=8,
-                alignment=TA_LEFT,
-                textColor=colors.grey
-            )
-            
-            metadata_text = f"""
-            <b>Projeto:</b> {self.project.name}<br/>
-            <b>Criado em:</b> {self.project.created_at.strftime('%d/%m/%Y %H:%M')}<br/>
-            <b>Arquivos GIS:</b> {self.project.uploaded_files.count()}<br/>
-            <b>Gerado por:</b> GIS SaaS - Geração Automática de Mapas
-            """
-            
-            metadata = Paragraph(metadata_text, metadata_style)
-            story.append(Spacer(1, 30))
-            story.append(metadata)
-            
-            # Construir PDF
-            doc.build(story)
-            
-            # Limpar arquivo temporário
-            if os.path.exists(map_image_path):
-                os.remove(map_image_path)
-            
-            logger.info(f"PDF exportado com sucesso: {output_path}")
-            return output_path
-            
-        except Exception as e:
-            logger.error(f"Erro na exportação para PDF: {str(e)}")
-            raise
     
     def export_to_png(self, map_figure, output_path: str = None, dpi: int = 300) -> str:
         """
@@ -234,103 +96,6 @@ class MapExporter:
             logger.error(f"Erro na exportação para PNG: {str(e)}")
             raise
     
-    def export_to_html(self, map_html_content: str, output_path: str = None) -> str:
-        """
-        Exportar mapa interativo para HTML
-        
-        Args:
-            map_html_content: Conteúdo HTML do mapa
-            output_path: Caminho de saída (opcional)
-            
-        Returns:
-            Caminho do arquivo HTML gerado
-        """
-        try:
-            if not output_path:
-                output_path = os.path.join(
-                    self.output_dir, 
-                    f'{self.project.id}_map.html'
-                )
-            
-            # Template HTML completo
-            html_template = f"""
-            <!DOCTYPE html>
-            <html lang="pt-BR">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>{self.config.title}</title>
-                <style>
-                    body {{
-                        margin: 0;
-                        padding: 20px;
-                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                        background-color: #f8f9fa;
-                    }}
-                    .header {{
-                        text-align: center;
-                        margin-bottom: 20px;
-                        padding: 20px;
-                        background: white;
-                        border-radius: 10px;
-                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                    }}
-                    .header h1 {{
-                        color: {self.config.primary_color};
-                        margin: 0 0 10px 0;
-                    }}
-                    .header p {{
-                        color: #6c757d;
-                        margin: 0;
-                    }}
-                    .map-container {{
-                        background: white;
-                        border-radius: 10px;
-                        padding: 20px;
-                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                        margin-bottom: 20px;
-                    }}
-                    .footer {{
-                        text-align: center;
-                        padding: 20px;
-                        background: white;
-                        border-radius: 10px;
-                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                        font-size: 12px;
-                        color: #6c757d;
-                    }}
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>{self.config.title}</h1>
-                    {f'<p>{self.config.subtitle}</p>' if self.config.subtitle else ''}
-                </div>
-                
-                <div class="map-container">
-                    {map_html_content}
-                </div>
-                
-                <div class="footer">
-                    <p><strong>Projeto:</strong> {self.project.name}</p>
-                    <p><strong>Gerado em:</strong> {self.project.created_at.strftime('%d/%m/%Y %H:%M')}</p>
-                    {f'<p>{self.config.additional_info}</p>' if self.config.additional_info else ''}
-                    <p>Gerado por <strong>GIS SaaS</strong> - Geração Automática de Mapas</p>
-                </div>
-            </body>
-            </html>
-            """
-            
-            # Salvar arquivo HTML
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(html_template)
-            
-            logger.info(f"HTML exportado com sucesso: {output_path}")
-            return output_path
-            
-        except Exception as e:
-            logger.error(f"Erro na exportação para HTML: {str(e)}")
-            raise
     
     def _save_figure_as_image(self, figure, format='png') -> str:
         """Salvar figura matplotlib como imagem temporária"""
@@ -426,39 +191,24 @@ class MapExporter:
 
 def optimize_export_quality(output_format: str) -> Dict:
     """
-    Retornar configurações otimizadas para cada formato de exportação
+    Retornar configurações otimizadas para exportação PNG
     
     Args:
-        output_format: Formato de saída ('pdf', 'png', 'html')
+        output_format: Formato de saída ('png' apenas)
         
     Returns:
         Dicionário com configurações otimizadas
     """
-    configs = {
-        'pdf': {
-            'dpi': 300,
-            'figure_size': (16, 12),
-            'font_scale': 1.2,
-            'line_width': 2,
-            'marker_size': 8
-        },
-        'png': {
-            'dpi': 300,
-            'figure_size': (20, 15),
-            'font_scale': 1.5,
-            'line_width': 3,
-            'marker_size': 10
-        },
-        'html': {
-            'dpi': 150,
-            'figure_size': (12, 9),
-            'font_scale': 1.0,
-            'line_width': 2,
-            'marker_size': 6
-        }
-    }
+    if output_format != 'png':
+        raise ValueError("Apenas o formato PNG é suportado")
     
-    return configs.get(output_format, configs['png'])
+    return {
+        'dpi': 300,
+        'figure_size': (20, 15),
+        'font_scale': 1.5,
+        'line_width': 3,
+        'marker_size': 10
+    }
 
 
 def validate_export_parameters(output_format: str, **kwargs) -> bool:
@@ -466,23 +216,20 @@ def validate_export_parameters(output_format: str, **kwargs) -> bool:
     Validar parâmetros de exportação
     
     Args:
-        output_format: Formato de saída
+        output_format: Formato de saída ('png' apenas)
         **kwargs: Parâmetros adicionais
         
     Returns:
         True se válido, False caso contrário
     """
-    valid_formats = ['pdf', 'png', 'html']
-    
-    if output_format not in valid_formats:
-        logger.error(f"Formato inválido: {output_format}. Formatos válidos: {valid_formats}")
+    if output_format != 'png':
+        logger.error(f"Formato inválido: {output_format}. Apenas PNG é suportado")
         return False
     
-    # Validar DPI para formatos de imagem
-    if output_format in ['pdf', 'png']:
-        dpi = kwargs.get('dpi', 300)
-        if not isinstance(dpi, int) or dpi < 72 or dpi > 600:
-            logger.error(f"DPI inválido: {dpi}. Deve estar entre 72 e 600")
-            return False
+    # Validar DPI
+    dpi = kwargs.get('dpi', 300)
+    if not isinstance(dpi, int) or dpi < 72 or dpi > 600:
+        logger.error(f"DPI inválido: {dpi}. Deve estar entre 72 e 600")
+        return False
     
     return True

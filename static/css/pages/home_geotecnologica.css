@@ -1,0 +1,312 @@
+/* CSS específico para Home - Tema Geotecnológico Moderno */
+
+:root {
+    /* Paleta Minimalista Roxa */
+    --geo-primary: #6366F1;        /* Roxo moderno */
+    --geo-secondary: #8B5CF6;      /* Roxo claro */
+    --geo-accent: #A855F7;         /* Roxo accent */
+    --geo-highlight: #EC4899;      /* Rosa accent */
+    --geo-dark: #1F2937;          /* Cinza escuro */
+    --geo-light: #F9FAFB;         /* Branco suave */
+    --geo-gradient-1: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+    --geo-gradient-2: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%);
+    --geo-gradient-hero: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%);
+    
+    /* Sombras minimalistas */
+    --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-strong: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
+}
+
+/* Hero Section com Gradiente */
+.hero-section {
+    background: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%);
+    position: relative;
+    overflow: hidden;
+    padding: 6rem 0;
+    margin-bottom: 0;
+    color: white;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+}
+
+.hero-section .container {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-section h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
+
+.hero-section p {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+}
+
+/* Botões minimalistas */
+.home_btn-primary {
+    background: var(--geo-primary);
+    border: none;
+    padding: 0.875rem 2rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    color: white;
+    box-shadow: var(--shadow-soft);
+}
+
+.home_btn-primary:hover {
+    background: var(--geo-secondary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+    color: white;
+}
+
+.home_btn-outline {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    padding: 0.875rem 2rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+.home_btn-outline:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Cards de Features minimalistas */
+.home_feature-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.2s ease;
+    height: 100%;
+    border: 1px solid #E5E7EB;
+}
+
+.home_feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+    border-color: var(--geo-primary);
+}
+
+.home_feature-card .icon {
+    font-size: 2.5rem;
+    color: var(--geo-primary);
+    margin-bottom: 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.home_feature-card:hover .icon {
+    color: var(--geo-secondary);
+}
+
+.home_feature-card h4 {
+    color: var(--geo-dark);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+
+.home_feature-card p {
+    color: #6B7280;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+/* Seção de formatos minimalista */
+.home_formats-section {
+    background: #F9FAFB;
+    padding: 4rem 0;
+    margin: 3rem 0;
+}
+
+.home_format-item {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid #E5E7EB;
+    height: 100%;
+}
+
+.home_format-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+    border-color: var(--geo-primary);
+}
+
+.home_format-item i {
+    color: var(--geo-primary);
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.home_format-item:hover i {
+    color: var(--geo-secondary);
+}
+
+.home_format-item strong {
+    color: var(--geo-dark);
+    font-weight: 600;
+}
+
+.home_format-item small {
+    color: #6B7280;
+    font-size: 0.85rem;
+}
+
+/* Seção de projetos recentes minimalista */
+.home_projects-section h3 {
+    color: var(--geo-dark);
+    font-weight: 600;
+}
+
+.home_project-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.2s ease;
+    margin-bottom: 1.5rem;
+    border: 1px solid #E5E7EB;
+}
+
+.home_project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+    border-color: var(--geo-primary);
+}
+
+.home_project-card h5 {
+    color: var(--geo-dark);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+/* Animações suaves */
+.home_fade-in {
+    animation: homeFadeIn 0.6s ease-out;
+}
+
+@keyframes homeFadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+.home_slide-up {
+    animation: homeSlideUp 0.4s ease-out;
+}
+
+@keyframes homeSlideUp {
+    from { 
+        transform: translateY(20px); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateY(0); 
+        opacity: 1; 
+    }
+}
+
+/* Loading minimalista */
+.home_loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #E5E7EB;
+    border-top: 2px solid var(--geo-primary);
+    border-radius: 50%;
+    animation: homeLoadingSpin 1s linear infinite;
+}
+
+@keyframes homeLoadingSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsividade aprimorada */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 3rem 0;
+    }
+    
+    .hero-section h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero-section p {
+        font-size: 1.1rem;
+    }
+    
+    .home_btn-primary,
+    .home_btn-outline {
+        padding: 0.8rem 2rem;
+        font-size: 0.9rem;
+    }
+    
+    .home_feature-card {
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .home_formats-section {
+        margin: 2rem 0;
+        padding: 3rem 0;
+    }
+}
+
+@media (max-width: 576px) {
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .home_feature-card .icon {
+        font-size: 3rem;
+    }
+    
+    .home_btn-primary,
+    .home_btn-outline {
+        display: block;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Remover efeitos de partículas para design minimalista */
+.home_particles {
+    display: none;
+}

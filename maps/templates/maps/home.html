@@ -3,137 +3,150 @@
 
 {% block title %}GIS SaaS - Geração Automática de Mapas{% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'css/pages/home_geotecnologica.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <!-- Hero Section -->
 <section class="hero-section">
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6">
-                <h1 class="fade-in">Gere Mapas Profissionais Automaticamente</h1>
-                <p class="fade-in">Transforme seus arquivos GIS em mapas de localização profissionais em poucos cliques. Suporte para Shapefile, KML, KMZ e outros formatos.</p>
-                <div class="mt-4 fade-in">
-                    <a href="{% url 'new_project' %}" class="btn btn-light btn-lg me-3">
+                <h1 class="home_fade-in">Gere Mapas Profissionais Automaticamente</h1>
+                <p class="home_fade-in">Transforme seus dados geoespaciais em mapas de alta qualidade. Suporte completo para Shapefile, KML, KMZ e outros formatos GIS.</p>
+                <div class="mt-4 home_fade-in">
+                    <a href="{% url 'new_project' %}" class="btn home_btn-primary btn-lg me-3">
                         <i class="fas fa-plus me-2"></i>Criar Projeto
                     </a>
-                    <a href="{% url 'projects' %}" class="btn btn-outline-light btn-lg">
+                    <a href="{% url 'projects' %}" class="btn home_btn-outline btn-lg">
                         <i class="fas fa-folder me-2"></i>Ver Projetos
                     </a>
                 </div>
             </div>
             <div class="col-lg-6 text-center">
-                <img src="{% static 'images/map-illustration.svg' %}" alt="Ilustração de Mapa" class="img-fluid" style="max-height: 400px;">
+                <!-- Espaço reservado para imagem -->
+                <div class="hero-image-placeholder">
+                    <i class="fas fa-map fa-5x" style="color: rgba(255, 255, 255, 0.3);"></i>
+                    <p class="mt-3" style="color: rgba(255, 255, 255, 0.5); font-size: 0.9rem;">Espaço para imagem</p>
+                </div>
             </div>
         </div>
     </div>
 </section>
 
 <!-- Features Section -->
-<section class="container">
+<section class="container py-5">
     <div class="row">
         <div class="col-12 text-center mb-5">
-            <h2>Como Funciona</h2>
-            <p class="text-muted">Processo simples em 3 passos</p>
+            <h2 style="color: var(--geo-dark); font-weight: 600;">Como Funciona</h2>
+            <p style="color: #6B7280;">Processo simples em 3 passos</p>
         </div>
     </div>
     
     <div class="row">
         <div class="col-md-4 mb-4">
-            <div class="feature-card text-center slide-up">
+            <div class="home_feature-card text-center home_slide-up">
                 <div class="icon">
                     <i class="fas fa-upload"></i>
                 </div>
-                <h4>1. Upload do Arquivo</h4>
-                <p>Envie seus arquivos GIS (Shapefile, KML, KMZ) com a área de interesse que você deseja mapear.</p>
+                <h4>1. Upload</h4>
+                <p>Envie seus arquivos GIS (Shapefile, KML, KMZ, GeoJSON) de forma simples e rápida.</p>
             </div>
         </div>
         
         <div class="col-md-4 mb-4">
-            <div class="feature-card text-center slide-up" style="animation-delay: 0.2s;">
+            <div class="home_feature-card text-center home_slide-up" style="animation-delay: 0.1s;">
                 <div class="icon">
                     <i class="fas fa-palette"></i>
                 </div>
                 <h4>2. Personalização</h4>
-                <p>Escolha o layout, cores, adicione seu logo e configure as informações que aparecerão no mapa.</p>
+                <p>Configure layouts, cores e adicione informações personalizadas ao seu mapa.</p>
             </div>
         </div>
         
         <div class="col-md-4 mb-4">
-            <div class="feature-card text-center slide-up" style="animation-delay: 0.4s;">
+            <div class="home_feature-card text-center home_slide-up" style="animation-delay: 0.2s;">
                 <div class="icon">
                     <i class="fas fa-download"></i>
                 </div>
                 <h4>3. Download</h4>
-                <p>Baixe seu mapa profissional em formato PDF, PNG ou visualize interativamente em HTML.</p>
+                <p>Baixe seu mapa profissional em PDF, PNG ou visualize online.</p>
             </div>
         </div>
     </div>
 </section>
 
 <!-- Supported Formats Section -->
-<section class="container mt-5">
-    <div class="row">
-        <div class="col-12 text-center mb-4">
-            <h3>Formatos Suportados</h3>
-        </div>
-    </div>
-    
-    <div class="row justify-content-center">
-        <div class="col-md-2 col-sm-4 col-6 text-center mb-3">
-            <div class="p-3">
-                <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
-                <p class="mb-0"><strong>Shapefile</strong></p>
-                <small class="text-muted">.shp, .shx, .dbf</small>
+<section class="home_formats-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h3 style="color: var(--geo-dark); font-weight: 600;">Formatos Suportados</h3>
+                <p style="color: #6B7280;">Compatibilidade com padrões GIS</p>
             </div>
         </div>
         
-        <div class="col-md-2 col-sm-4 col-6 text-center mb-3">
-            <div class="p-3">
-                <i class="fas fa-map-marker-alt fa-2x text-primary mb-2"></i>
-                <p class="mb-0"><strong>KML</strong></p>
-                <small class="text-muted">.kml</small>
+        <div class="row justify-content-center">
+            <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-3">
+                <div class="home_format-item">
+                    <i class="fas fa-file-alt fa-2x mb-2"></i>
+                    <p class="mb-0"><strong>Shapefile</strong></p>
+                    <small>.shp, .shx, .dbf</small>
+                </div>
             </div>
-        </div>
-        
-        <div class="col-md-2 col-sm-4 col-6 text-center mb-3">
-            <div class="p-3">
-                <i class="fas fa-archive fa-2x text-primary mb-2"></i>
-                <p class="mb-0"><strong>KMZ</strong></p>
-                <small class="text-muted">.kmz</small>
+            
+            <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-3">
+                <div class="home_format-item">
+                    <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
+                    <p class="mb-0"><strong>KML</strong></p>
+                    <small>.kml</small>
+                </div>
             </div>
-        </div>
-        
-        <div class="col-md-2 col-sm-4 col-6 text-center mb-3">
-            <div class="p-3">
-                <i class="fas fa-code fa-2x text-primary mb-2"></i>
-                <p class="mb-0"><strong>GeoJSON</strong></p>
-                <small class="text-muted">.geojson</small>
+            
+            <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-3">
+                <div class="home_format-item">
+                    <i class="fas fa-archive fa-2x mb-2"></i>
+                    <p class="mb-0"><strong>KMZ</strong></p>
+                    <small>.kmz</small>
+                </div>
             </div>
-        </div>
-        
-        <div class="col-md-2 col-sm-4 col-6 text-center mb-3">
-            <div class="p-3">
-                <i class="fas fa-route fa-2x text-primary mb-2"></i>
-                <p class="mb-0"><strong>GPX</strong></p>
-                <small class="text-muted">.gpx</small>
+            
+            <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-3">
+                <div class="home_format-item">
+                    <i class="fas fa-code fa-2x mb-2"></i>
+                    <p class="mb-0"><strong>GeoJSON</strong></p>
+                    <small>.geojson</small>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-3">
+                <div class="home_format-item">
+                    <i class="fas fa-route fa-2x mb-2"></i>
+                    <p class="mb-0"><strong>GPX</strong></p>
+                    <small>.gpx</small>
+                </div>
             </div>
         </div>
     </div>
 </section>
 
 <!-- Recent Projects Section -->
-<section class="container mt-5">
+<section class="container py-5 home_projects-section">
     <div class="row">
         <div class="col-12 d-flex justify-content-between align-items-center mb-4">
             <h3>Projetos Recentes</h3>
-            <a href="{% url 'projects' %}" class="btn btn-outline-primary">Ver Todos</a>
+            <a href="{% url 'projects' %}" class="btn home_btn-primary">
+                <i class="fas fa-arrow-right me-2"></i>Ver Todos
+            </a>
         </div>
     </div>
     
     <div class="row" id="recent-projects">
         <!-- Projects will be loaded here via JavaScript -->
         <div class="col-12 text-center">
-            <div class="loading"></div>
-            <p class="mt-2">Carregando projetos...</p>
+            <div class="home_loading"></div>
+            <p class="mt-2" style="color: #6B7280;">Carregando projetos...</p>
         </div>
     </div>
 </section>
@@ -155,8 +168,8 @@ async function loadRecentProjects() {
         if (projects.length === 0) {
             container.innerHTML = `
                 <div class="col-12 text-center">
-                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-                    <p class="text-muted">Nenhum projeto encontrado. <a href="{% url 'new_project' %}">Crie seu primeiro projeto</a>!</p>
+                    <i class="fas fa-folder-open fa-3x mb-3" style="color: var(--geo-primary);"></i>
+                    <p style="color: #6B7280;">Nenhum projeto encontrado. <a href="{% url 'new_project' %}" style="color: var(--geo-primary); font-weight: 600;">Crie seu primeiro projeto</a>!</p>
                 </div>
             `;
             return;
@@ -164,11 +177,11 @@ async function loadRecentProjects() {
         
         container.innerHTML = projects.map(project => `
             <div class="col-md-4 mb-3">
-                <div class="project-card">
+                <div class="home_project-card">
                     <h5>${project.name}</h5>
-                    <p class="text-muted">${project.description || 'Sem descrição'}</p>
+                    <p style="color: #6B7280;">${project.description || 'Sem descrição'}</p>
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">
+                        <small style="color: #6c757d;">
                             <i class="fas fa-calendar me-1"></i>
                             ${new Date(project.created_at).toLocaleDateString('pt-BR')}
                         </small>
@@ -177,7 +190,7 @@ async function loadRecentProjects() {
                         </span>
                     </div>
                     <div class="mt-3">
-                        <a href="/project/${project.id}/" class="btn btn-sm btn-primary">
+                        <a href="/project/${project.id}/" class="btn btn-sm home_btn-primary">
                             <i class="fas fa-eye me-1"></i>Ver Projeto
                         </a>
                     </div>
@@ -189,12 +202,11 @@ async function loadRecentProjects() {
         console.error('Erro ao carregar projetos:', error);
         document.getElementById('recent-projects').innerHTML = `
             <div class="col-12 text-center">
-                <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
-                <p class="text-muted">Erro ao carregar projetos recentes.</p>
+                <i class="fas fa-exclamation-triangle fa-2x mb-2" style="color: var(--geo-highlight);"></i>
+                <p style="color: #6B7280;">Erro ao carregar projetos recentes.</p>
             </div>
         `;
     }
 }
 </script>
 {% endblock %}
-

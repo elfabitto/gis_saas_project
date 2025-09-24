@@ -194,12 +194,44 @@
                                     <button type="button" class="novo_projeto-btn-outline" onclick="previousStep(2)">
                                         <i class="fas fa-arrow-left me-1"></i> Anterior
                                     </button>
-                                    <button type="button" class="novo_projeto-btn-success" onclick="createProject()">
-                                        <i class="fas fa-check me-1"></i> Criar Projeto
+                                    <button type="button" class="novo_projeto-btn-success" id="create-project-btn" onclick="createProject()">
+                                        <i class="fas fa-map me-1"></i> Elaborar Mapa
                                     </button>
                                 </div>
                             </form>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Carregamento -->
+<div class="modal fade" id="processing-modal" tabindex="-1" aria-labelledby="processingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content novo_projeto-modal">
+            <div class="modal-body text-center p-5">
+                <div class="novo_projeto-processing-animation mb-4">
+                    <div class="novo_projeto-spinner"></div>
+                    <div class="novo_projeto-map-icon">
+                        <i class="fas fa-map"></i>
+                    </div>
+                </div>
+                <h4 class="mb-3">Elaborando seu mapa...</h4>
+                <p class="text-muted mb-4">Processando dados geográficos e aplicando o template selecionado</p>
+                <div class="novo_projeto-progress-steps">
+                    <div class="novo_projeto-step-item active" id="process-step-1">
+                        <div class="novo_projeto-step-dot"></div>
+                        <span>Analisando arquivo</span>
+                    </div>
+                    <div class="novo_projeto-step-item" id="process-step-2">
+                        <div class="novo_projeto-step-dot"></div>
+                        <span>Aplicando template</span>
+                    </div>
+                    <div class="novo_projeto-step-item" id="process-step-3">
+                        <div class="novo_projeto-step-dot"></div>
+                        <span>Finalizando mapa</span>
                     </div>
                 </div>
             </div>

@@ -274,40 +274,152 @@ function setupLayoutStyleListeners() {
     selectedLayoutStyle = 'classic';
 }
 
-// Project creation
+// Project creation with map generation
 async function createProject() {
     try {
         // Validate configuration form
         if (!validateConfigForm()) return;
         
-        GISSaaS.setLoading('create-project-btn', true);
+        // Show processing modal
+        showProcessingModal();
         
-        // Prepare configuration data
+        // Step 1: Analyze file
+        updateProcessingStep(1, 'active');
+        await simulateDelay(2000);
+        
+        // Get or create a layout (for now, use a default layout ID)
+        // In a real implementation, you would fetch available layouts from the API
+        const defaultLayoutId = await getDefaultLayoutId();
+        
+        // Prepare configuration data according to the MapConfiguration model
         const configData = {
             project: projectData.id,
-            map_type: selectedMapType,
-            layout_style: selectedLayoutStyle,
+            layout: defaultLayoutId, // Required ForeignKey to MapLayout
             title: 'Mapa de Localização', // Título fixo
             subtitle: document.getElementById('area-name').value.trim(),
+            primary_color: '#2E8B57', // Default colors
+            secondary_color: '#4682B4',
             show_scale: true, // Valores padrão
             show_north_arrow: true,
-            show_legend: true
+            show_legend: true,
+            additional_info: '' // Optional field
         };
         
-        // Save configuration
+        // Complete step 1
+        updateProcessingStep(1, 'completed');
+        
+        // Step 2: Apply template
+        updateProcessingStep(2, 'active');
+        await simulateDelay(1500);
+        
+        // Save configuration first
         await GISSaaS.saveMapConfiguration(configData);
         
-        GISSaaS.showAlert('Projeto criado com sucesso!', 'success');
+        await simulateDelay(1500);
+        
+        // Generate map based on selected style
+        let mapResult;
+        switch(selectedLayoutStyle) {
+            case 'modern':
+                mapResult = await GISSaaS.generateModernMap(projectData.id, 'png');
+                break;
+            case 'vibrant':
+                mapResult = await GISSaaS.generateVividMap(projectData.id, 'png');
+                break;
+            case 'classic':
+            default:
+                mapResult = await GISSaaS.generateMap(projectData.id, 'png');
+                break;
+        }
+        
+        // Complete step 2
+        updateProcessingStep(2, 'completed');
+        
+        // Step 3: Finalize map
+        updateProcessingStep(3, 'active');
+        await simulateDelay(2000);
+        
+        // Complete step 3
+        updateProcessingStep(3, 'completed');
+        
+        // Wait a moment to show completion
+        await simulateDelay(1000);
+        
+        // Hide modal and redirect
+        hideProcessingModal();
         
         // Redirect to project page
         setTimeout(() => {
             window.location.href = `/project/${projectData.id}/`;
-        }, 1500);
+        }, 500);
         
     } catch (error) {
         console.error('Error creating project:', error);
-        GISSaaS.showAlert(`Erro ao criar projeto: ${error.message}`, 'danger');
-        GISSaaS.setLoading('create-project-btn', false);
+        hideProcessingModal();
+        GISSaaS.showAlert(`Erro ao elaborar mapa: ${error.message}`, 'danger');
+    }
+}
+
+// Modal functions
+function showProcessingModal() {
+    const modal = new bootstrap.Modal(document.getElementById('processing-modal'));
+    modal.show();
+    
+    // Reset all steps
+    resetProcessingSteps();
+}
+
+function hideProcessingModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('processing-modal'));
+    if (modal) {
+        modal.hide();
+    }
+}
+
+function resetProcessingSteps() {
+    for (let i = 1; i <= 3; i++) {
+        const step = document.getElementById(`process-step-${i}`);
+        step.classList.remove('active', 'completed');
+    }
+}
+
+function updateProcessingStep(stepNumber, status) {
+    const step = document.getElementById(`process-step-${stepNumber}`);
+    step.classList.remove('active', 'completed');
+    step.classList.add(status);
+}
+
+function simulateDelay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Get default layout ID
+async function getDefaultLayoutId() {
+    try {
+        // Get layouts from API using the correct endpoint
+        const response = await fetch('/api/layouts/by_type/?type=location');
+        if (response.ok) {
+            const layouts = await response.json();
+            if (layouts && layouts.length > 0) {
+                return layouts[0].id;
+            }
+        }
+        
+        // If specific endpoint fails, try getting all layouts
+        const allLayoutsResponse = await fetch('/api/layouts/');
+        if (allLayoutsResponse.ok) {
+            const allLayouts = await allLayoutsResponse.json();
+            const locationLayouts = allLayouts.filter(layout => layout.layout_type === 'location');
+            if (locationLayouts.length > 0) {
+                return locationLayouts[0].id;
+            }
+        }
+        
+        throw new Error('Nenhum layout de localização encontrado');
+        
+    } catch (error) {
+        console.error('Error getting default layout:', error);
+        throw error;
     }
 }
 

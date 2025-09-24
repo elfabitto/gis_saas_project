@@ -333,17 +333,29 @@ class MapGenerator:
         aux_img = Image.open(aux_path)
         info_img = Image.open(info_path)
         
-        # Calcular dimensões para o layout lateral
-        # Reduzir largura lateral para compensar mapa principal maior
-        lateral_width = int(main_img.width * 0.4)  # Reduzir largura lateral
+        # Calcular dimensões para o layout lateral mantendo proporção quadrada dos mapas auxiliares
+        lateral_width = int(main_img.width * 0.4)  # Largura do espaço lateral
         
-        # Redimensionar imagem auxiliar mantendo proporção quadrada
+        # Para mapas auxiliares quadrados, cada mapa deve ter altura = largura
         aux_target_height = int(main_img.height * 2/3)
-        aux_img = aux_img.resize((lateral_width, aux_target_height))
+        # Dividir a altura dos mapas auxiliares por 2 para ter dois mapas quadrados
+        single_map_height = aux_target_height // 2
         
-        # Redimensionar imagem de informações para ocupar 1/3 da altura restante
-        info_target_height = main_img.height - aux_target_height
-        info_img = info_img.resize((lateral_width, info_target_height))
+        # Usar a menor dimensão para garantir que seja quadrado
+        aux_square_size = min(lateral_width, single_map_height)
+        
+        # Redimensionar imagem auxiliar: largura = altura para cada mapa
+        # A imagem aux contém 2 mapas empilhados, então altura = 2 * aux_square_size
+        aux_img = aux_img.resize((aux_square_size, aux_square_size * 2))
+        
+        # Redimensionar imagem de informações para ocupar o espaço restante
+        info_target_height = main_img.height - (aux_square_size * 2)
+        info_img = info_img.resize((aux_square_size, info_target_height))
+        
+        # Ajustar largura lateral para a largura real dos mapas auxiliares
+        lateral_width = aux_square_size
+        # Ajustar altura alvo para os mapas auxiliares
+        aux_target_height = aux_square_size * 2
         
         # Criar uma nova imagem com largura combinada e espaço adicional para o título
         title_height = 200

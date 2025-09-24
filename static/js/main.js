@@ -148,6 +148,16 @@ async function generateModernMap(projectId, outputFormat) {
     });
 }
 
+async function generateVividMap(projectId, outputFormat) {
+    return await apiCall('/generated-maps/generate_vivid/', {
+        method: 'POST',
+        body: JSON.stringify({
+            project_id: projectId,
+            output_format: outputFormat
+        })
+    });
+}
+
 async function getGeneratedMaps(projectId = null) {
     const params = projectId ? `?project=${projectId}` : '';
     return await apiCall(`/generated-maps/${params}`);
@@ -301,6 +311,7 @@ window.GISSaaS = {
     saveMapConfiguration,
     generateMap,
     generateModernMap,
+    generateVividMap,
     getGeneratedMaps,
     initializeFileUpload,
     showProgress,

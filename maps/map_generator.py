@@ -237,9 +237,9 @@ class MapGenerator:
                 pil_image = pil_image.convert('RGBA')
             north_arrow = np.array(pil_image)
             
-            # Posicionar no canto superior esquerdo do mapa principal
+            # Posicionar no canto superior esquerdo do mapa principal (mesma posição do vivid)
             # [left, bottom, width, height] - coordenadas relativas à figura principal
-            newax = fig_main.add_axes([0.05, 0.8, 0.15, 0.15], anchor='NW', zorder=2)
+            newax = fig_main.add_axes([0.08, 0.78, 0.14, 0.14], anchor='NW', zorder=2)
             newax.imshow(north_arrow)
             newax.axis('off')
         except Exception as e:
@@ -291,11 +291,14 @@ class MapGenerator:
                                  transform=ax_info.transAxes)
         ax_info.add_patch(info_box)
         
-        # Informações cartográficas simplificadas
+        # Calcular escala real baseada no mapa principal
+        real_scale = self._calculate_map_scale(gdf_web)
+        
+        # Informações cartográficas com escala calculada
         info_lines = [
             'Sistema de Coordenadas Geográficas',
             'Datum: SIRGAS 2000',
-            'Escala Numérica: 1:50.000',
+            f'Escala Numérica: {real_scale}',
             f'Data: {pd.Timestamp.now().strftime("%d/%m/%Y")}'
         ]
         
@@ -354,41 +357,62 @@ class MapGenerator:
         aux_target_height = aux_square_size * 2
         
         # Criar uma nova imagem com largura combinada e espaço adicional para o título
-        title_height = 200
+        title_height = 280  # Aumentado para acomodar título maior
         combined_width = main_img.width + lateral_width
         combined_height = main_img.height
         combined_img = Image.new('RGB', (combined_width, combined_height + title_height), color='white')
         
-        # Adicionar título com estilo semelhante aos mapas
+        # Adicionar título com estilo limpo e elegante (baseado no vivid)
         from PIL import ImageDraw, ImageFont
         draw = ImageDraw.Draw(combined_img)
         
-        # Criar um retângulo para o fundo do título com margens
-        margin_top = 50  # Margem superior
-        margin_bottom = 50  # Margem inferior
-        draw.rectangle([(0, 0), (combined_width, title_height)], fill="#f0f0f000", outline="#FFFFFF", width=2)
+        # Fundo simples sem gradiente
+        draw.rectangle([(0, 0), (combined_width, title_height)], fill='#FFFFFF')
         
+        # Linha decorativa simples
+        line_y = title_height - 20
+        draw.rectangle([(50, line_y), (combined_width - 50, line_y + 3)], 
+                      fill='#026983')
+        
+        # Carregar fontes
         try:
-            # Tentar carregar uma fonte com tamanho maior
-            font = ImageFont.truetype("arial.ttf", 140)  # Aumentado para 56
-            subtitle_font = ImageFont.truetype("arial.ttf", 24)
+            title_font = ImageFont.truetype("arial.ttf", 120)
+            subtitle_font = ImageFont.truetype("arial.ttf", 60)
         except:
             try:
-                # Tentar carregar outra fonte se arial não estiver disponível
-                font = ImageFont.truetype("times.ttf", 140)
-                subtitle_font = ImageFont.truetype("times.ttf", 24)
+                title_font = ImageFont.truetype("calibri.ttf", 120)
+                subtitle_font = ImageFont.truetype("calibri.ttf", 60)
             except:
-                # Se não conseguir, usar a fonte padrão
-                font = ImageFont.load_default()
+                title_font = ImageFont.load_default()
                 subtitle_font = ImageFont.load_default()
         
-        # Posicionar o título no centro do retângulo com margens
-        title_y = title_height // 2
-        draw.text((combined_width // 2, title_y), 'MAPA DE LOCALIZAÇÃO', fill='black', font=font, anchor='mm')
+        # Título principal simples
+        title_text = "MAPA DE LOCALIZAÇÃO"
+        title_y = title_height // 2 - 40
         
-        # Removidas as linhas decorativas que estavam passando pelo meio do texto do título
+        # Sombra sutil
+        draw.text((combined_width // 2 + 2, title_y + 2), title_text, 
+                 fill='#E5E7EB', font=title_font, anchor='mm')
         
-        # Sem linhas decorativas na borda inferior do título
+        # Título principal
+        draw.text((combined_width // 2, title_y), title_text, 
+                 fill='#1A1A1A', font=title_font, anchor='mm')
+        
+        # Subtítulo com nome do projeto
+        if self.project.name:
+            subtitle_y = title_y + 80
+            project_name = self.project.name.upper()
+            if len(project_name) > 40:
+                project_name = project_name[:37] + "..."
+            
+            # Sombra sutil do subtítulo
+            draw.text((combined_width // 2 + 1, subtitle_y + 1), project_name,
+                     fill='#E5E7EB', font=subtitle_font, anchor='mm')
+            
+            # Subtítulo principal
+            draw.text((combined_width // 2, subtitle_y), project_name,
+                     fill='#2E2E2E', 
+                     font=subtitle_font, anchor='mm')
         
         # Colar as imagens abaixo do título
         combined_img.paste(main_img, (0, title_height))
@@ -410,6 +434,43 @@ class MapGenerator:
         
         return output_path
     
+    def _calculate_map_scale(self, gdf_web):
+        """Calcular escala real do mapa baseada nas dimensões"""
+        try:
+            # Obter bounds do mapa principal
+            bounds = gdf_web.total_bounds
+            margin = 5000  # Mesmo margin usado no mapa principal
+            
+            # Calcular largura real em metros (Web Mercator)
+            map_width_meters = (bounds[2] - bounds[0]) + (2 * margin)
+            
+            # Assumindo que o mapa será impresso em aproximadamente 20cm de largura
+            print_width_meters = 0.20  # 20cm em metros
+            
+            # Calcular escala
+            scale_ratio = map_width_meters / print_width_meters
+            
+            # Arredondar para escalas padrão
+            if scale_ratio < 7500:
+                return "1:5.000"
+            elif scale_ratio < 12500:
+                return "1:10.000"
+            elif scale_ratio < 17500:
+                return "1:15.000"
+            elif scale_ratio < 25000:
+                return "1:20.000"
+            elif scale_ratio < 37500:
+                return "1:30.000"
+            elif scale_ratio < 75000:
+                return "1:50.000"
+            elif scale_ratio < 150000:
+                return "1:100.000"
+            else:
+                return "1:200.000"
+                
+        except Exception as e:
+            logger.warning(f"Erro ao calcular escala: {str(e)}")
+            return "1:15.000"  # Escala padrão como fallback
     
     def _load_project_data(self) -> gpd.GeoDataFrame:
         """Carregar e combinar dados GIS do projeto"""

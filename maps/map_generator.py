@@ -76,26 +76,33 @@ class MapGenerator:
         
         # Criar duas figuras separadas
         
-        # 1. Figura para o mapa principal (quadrada)
-        fig_main = plt.figure(figsize=(8, 8))  # Tamanho fixo quadrado
+        # 1. Figura para o mapa principal (retangular mais largo)
+        fig_main = plt.figure(figsize=(10, 8))  # Aumentado a largura
         ax_main = fig_main.add_subplot(111)
         
-        # Ajustar zoom do mapa principal para garantir que seja quadrado
+        # Ajustar zoom do mapa principal - garantir que toda área KML apareça
         bounds = gdf_web.total_bounds
-        margin = 1000  # margem em metros
+        margin = 5000  # margem maior para garantir que toda área apareça
         
         # Calcular o centro do mapa
         center_x = (bounds[0] + bounds[2]) / 2
         center_y = (bounds[1] + bounds[3]) / 2
         
-        # Calcular a maior dimensão (largura ou altura) + margem
+        # Calcular dimensões com margem adequada
         width = bounds[2] - bounds[0] + 2 * margin
         height = bounds[3] - bounds[1] + 2 * margin
+        
+        # Garantir que a proporção seja adequada para mostrar toda a área
+        # Usar a maior dimensão como referência
         max_dim = max(width, height)
         
-        # Definir limites quadrados a partir do centro
-        ax_main.set_xlim([center_x - max_dim/2, center_x + max_dim/2])
-        ax_main.set_ylim([center_y - max_dim/2, center_y + max_dim/2])
+        # Expandir a largura proporcionalmente à figura (10:8)
+        target_width = max_dim * (10/8)
+        target_height = max_dim
+        
+        # Definir limites garantindo que toda área KML seja visível
+        ax_main.set_xlim([center_x - target_width/2, center_x + target_width/2])
+        ax_main.set_ylim([center_y - target_height/2, center_y + target_height/2])
         
         # Adicionar fundo do OpenStreetMap
         ctx.add_basemap(ax_main, source=ctx.providers.OpenStreetMap.Mapnik)
@@ -245,27 +252,102 @@ class MapGenerator:
         # Ajustar layout dos mapas auxiliares
         fig_aux.tight_layout()
         
+        # 3. Criar figura para legenda e informações cartográficas
+        fig_info = plt.figure(figsize=(4, 4))  # Mesma largura dos mapas auxiliares
+        fig_info.patch.set_facecolor('white')
+        
+        # Criar um subplot para organizar o conteúdo
+        ax_info = fig_info.add_subplot(111)
+        ax_info.axis('off')  # Remover eixos
+        
+        # Adicionar legenda
+        legend_y = 0.9
+        ax_info.text(0.05, legend_y, 'LEGENDA', fontsize=14, fontweight='bold', 
+                    transform=ax_info.transAxes, verticalalignment='top')
+        
+        # Adicionar item da legenda com cor do projeto
+        legend_item_y = legend_y - 0.1
+        # Criar um retângulo colorido para representar a área do projeto
+        from matplotlib.patches import Rectangle
+        rect = Rectangle((0.05, legend_item_y - 0.03), 0.08, 0.04, 
+                        facecolor=self.config.primary_color, 
+                        edgecolor=self.config.secondary_color,
+                        transform=ax_info.transAxes)
+        ax_info.add_patch(rect)
+        
+        # Texto da legenda
+        ax_info.text(0.18, legend_item_y, 'Área do Projeto', fontsize=10, 
+                    transform=ax_info.transAxes, verticalalignment='center')
+        
+        # Adicionar informações cartográficas
+        info_y_start = 0.65
+        ax_info.text(0.05, info_y_start, 'INFORMAÇÕES CARTOGRÁFICAS', 
+                    fontsize=12, fontweight='bold', 
+                    transform=ax_info.transAxes, verticalalignment='top')
+        
+        # Criar caixa de fundo para as informações
+        from matplotlib.patches import FancyBboxPatch
+        info_box = FancyBboxPatch((0.02, 0.05), 0.96, 0.55,
+                                 boxstyle="round,pad=0.02",
+                                 facecolor="#ffffff",
+                                 edgecolor="#ffffff",
+                                 linewidth=1,
+                                 transform=ax_info.transAxes)
+        ax_info.add_patch(info_box)
+        
+        # Informações cartográficas simplificadas
+        info_lines = [
+            'Sistema de Coordenadas Geográficas',
+            'Datum: SIRGAS 2000',
+            'Escala Numérica: 1:50.000',
+            f'Data: {pd.Timestamp.now().strftime("%d/%m/%Y")}'
+        ]
+        
+        line_height = 0.06  # Reduzir espaçamento entre linhas
+        current_y = info_y_start - 0.08
+        
+        for line in info_lines:
+            ax_info.text(0.08, current_y, line, fontsize=9,
+                       transform=ax_info.transAxes, verticalalignment='top')
+            current_y -= line_height
+        
+        # Ajustar layout da figura de informações
+        fig_info.tight_layout()
+        
         # Salvar as figuras em arquivos temporários
         temp_dir = tempfile.mkdtemp()
         main_path = os.path.join(temp_dir, 'main.png')
         aux_path = os.path.join(temp_dir, 'aux.png')
+        info_path = os.path.join(temp_dir, 'info.png')
         
         fig_main.savefig(main_path, dpi=300, bbox_inches='tight')
         fig_aux.savefig(aux_path, dpi=300, bbox_inches='tight')
+        fig_info.savefig(info_path, dpi=300, bbox_inches='tight')
         
         plt.close(fig_main)
         plt.close(fig_aux)
+        plt.close(fig_info)
         
         # Combinar as imagens lado a lado
         main_img = Image.open(main_path)
         aux_img = Image.open(aux_path)
+        info_img = Image.open(info_path)
         
-        # Redimensionar a imagem auxiliar para ter a mesma altura que a imagem principal
-        aux_img = aux_img.resize((int(aux_img.width * main_img.height / aux_img.height), main_img.height))
+        # Calcular dimensões para o layout lateral
+        # Reduzir largura lateral para compensar mapa principal maior
+        lateral_width = int(main_img.width * 0.4)  # Reduzir largura lateral
+        
+        # Redimensionar imagem auxiliar mantendo proporção quadrada
+        aux_target_height = int(main_img.height * 2/3)
+        aux_img = aux_img.resize((lateral_width, aux_target_height))
+        
+        # Redimensionar imagem de informações para ocupar 1/3 da altura restante
+        info_target_height = main_img.height - aux_target_height
+        info_img = info_img.resize((lateral_width, info_target_height))
         
         # Criar uma nova imagem com largura combinada e espaço adicional para o título
-        title_height = 200  # Aumentado para dar mais espaço ao título e margens
-        combined_width = main_img.width + aux_img.width
+        title_height = 200
+        combined_width = main_img.width + lateral_width
         combined_height = main_img.height
         combined_img = Image.new('RGB', (combined_width, combined_height + title_height), color='white')
         
@@ -276,16 +358,16 @@ class MapGenerator:
         # Criar um retângulo para o fundo do título com margens
         margin_top = 50  # Margem superior
         margin_bottom = 50  # Margem inferior
-        draw.rectangle([(0, 0), (combined_width, title_height)], fill="#f0f0f000", outline="#606060", width=2)
+        draw.rectangle([(0, 0), (combined_width, title_height)], fill="#f0f0f000", outline="#FFFFFF", width=2)
         
         try:
             # Tentar carregar uma fonte com tamanho maior
-            font = ImageFont.truetype("arial.ttf", 150)  # Aumentado para 56
+            font = ImageFont.truetype("arial.ttf", 140)  # Aumentado para 56
             subtitle_font = ImageFont.truetype("arial.ttf", 24)
         except:
             try:
                 # Tentar carregar outra fonte se arial não estiver disponível
-                font = ImageFont.truetype("times.ttf", 150)
+                font = ImageFont.truetype("times.ttf", 140)
                 subtitle_font = ImageFont.truetype("times.ttf", 24)
             except:
                 # Se não conseguir, usar a fonte padrão
@@ -303,6 +385,7 @@ class MapGenerator:
         # Colar as imagens abaixo do título
         combined_img.paste(main_img, (0, title_height))
         combined_img.paste(aux_img, (main_img.width, title_height))
+        combined_img.paste(info_img, (main_img.width, title_height + aux_target_height))
         
         # Salvar a imagem combinada
         filename = f'{self.project.id}_map.png'
@@ -314,6 +397,7 @@ class MapGenerator:
         # Limpar arquivos temporários
         os.remove(main_path)
         os.remove(aux_path)
+        os.remove(info_path)
         os.rmdir(temp_dir)
         
         return output_path

@@ -21,7 +21,7 @@
 
 /* Hero Section com Gradiente */
 .hero-section {
-    background: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%);
+    background: linear-gradient(135deg, #3e10aa 0%, #ffffff 100%);
     position: relative;
     overflow: hidden;
     padding: 6rem 0;

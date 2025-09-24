@@ -259,12 +259,38 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Escolha o formato de saída para o mapa:</p>
-                <div class="d-grid gap-2">
-                    <button class="btn btn-primary" onclick="generateMap('png')">
-                        <i class="fas fa-image me-2"></i>Gerar Mapa PNG
-                        <small class="d-block text-muted">Imagem de alta qualidade ideal para apresentações e impressão</small>
-                    </button>
+                <p>Escolha o estilo e formato de saída para o mapa:</p>
+                <div class="d-grid gap-3">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="fas fa-star me-2"></i>Design Moderno (Recomendado)</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Mapa com design profissional, tipografia moderna, cores elegantes e elementos visuais aprimorados.</p>
+                            <button class="btn btn-primary w-100" onclick="generateModernMap('png')">
+                                <i class="fas fa-magic me-2"></i>Gerar Mapa Moderno PNG
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card border-secondary">
+                        <div class="card-header bg-secondary text-white">
+                            <h6 class="mb-0"><i class="fas fa-map me-2"></i>Design Clássico</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Mapa com layout tradicional e elementos cartográficos padrão.</p>
+                            <button class="btn btn-secondary w-100" onclick="generateMap('png')">
+                                <i class="fas fa-image me-2"></i>Gerar Mapa Clássico PNG
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Ambos os formatos geram imagens de alta qualidade (300 DPI) ideais para apresentações e impressão.
+                    </small>
                 </div>
             </div>
         </div>
@@ -286,11 +312,11 @@ async function generateMap(format) {
         const modal = bootstrap.Modal.getInstance(document.getElementById('generateMapModal'));
         modal.hide();
         
-        GISSaaS.showAlert(`Gerando mapa ${format.toUpperCase()}... Isso pode levar alguns minutos.`, 'info');
+        GISSaaS.showAlert(`Gerando mapa clássico ${format.toUpperCase()}... Isso pode levar alguns minutos.`, 'info');
         
         const result = await GISSaaS.generateMap(projectId, format);
         
-        GISSaaS.showAlert('Mapa gerado com sucesso!', 'success');
+        GISSaaS.showAlert('Mapa clássico gerado com sucesso!', 'success');
         
         // Recarregar página para mostrar novo mapa
         setTimeout(() => {
@@ -300,6 +326,28 @@ async function generateMap(format) {
     } catch (error) {
         console.error('Error generating map:', error);
         GISSaaS.showAlert(`Erro ao gerar mapa: ${error.message}`, 'danger');
+    }
+}
+
+async function generateModernMap(format) {
+    try {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('generateMapModal'));
+        modal.hide();
+        
+        GISSaaS.showAlert(`Gerando mapa moderno ${format.toUpperCase()}... Isso pode levar alguns minutos.`, 'info');
+        
+        const result = await GISSaaS.generateModernMap(projectId, format);
+        
+        GISSaaS.showAlert('Mapa moderno gerado com sucesso!', 'success');
+        
+        // Recarregar página para mostrar novo mapa
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error generating modern map:', error);
+        GISSaaS.showAlert(`Erro ao gerar mapa moderno: ${error.message}`, 'danger');
     }
 }
 

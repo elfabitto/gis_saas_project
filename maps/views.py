@@ -195,6 +195,32 @@ class GeneratedMapViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(detail=False, methods=['post'])
+    def generate_modern(self, request):
+        """Gerar novo mapa com design moderno"""
+        from .map_generator_modern import generate_modern_map_for_project
+        
+        serializer = MapGenerationRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            project_id = serializer.validated_data['project_id']
+            output_format = serializer.validated_data['output_format']
+            
+            try:
+                # Gerar mapa moderno usando a nova função
+                generated_map = generate_modern_map_for_project(str(project_id), output_format)
+                
+                response_serializer = GeneratedMapSerializer(generated_map, context={'request': request})
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+                
+            except Exception as e:
+                logger.error(f"Erro na geração do mapa moderno: {str(e)}")
+                return Response(
+                    {'error': f'Erro na geração do mapa moderno: {str(e)}'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     @action(detail=True, methods=['get'])
     def download(self, request, pk=None):
         """Download do mapa gerado"""

@@ -220,11 +220,13 @@ class MapGenerator:
             spine.set_edgecolor('#606060')
             spine.set_linewidth(1)
         
-        # Adicionar rosa dos ventos
+        # Adicionar rosa dos ventos no canto superior esquerdo do mapa principal
         try:
             north_arrow_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'north_arrow.png')
             north_arrow = plt.imread(north_arrow_path)
-            newax = fig_aux.add_axes([0.7, 0.15, 0.2, 0.2], anchor='SE', zorder=2)
+            # Posicionar no canto superior esquerdo do mapa principal
+            # [left, bottom, width, height] - coordenadas relativas à figura principal
+            newax = fig_main.add_axes([0.05, 0.8, 0.15, 0.15], anchor='NW', zorder=2)
             newax.imshow(north_arrow)
             newax.axis('off')
         except Exception as e:

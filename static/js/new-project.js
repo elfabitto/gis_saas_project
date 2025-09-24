@@ -3,18 +3,24 @@
 let currentStep = 1;
 let projectData = {};
 let uploadedFileData = null;
-let selectedLayout = null;
+let selectedMapType = null;
+let selectedLayoutStyle = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     initializeFileUpload('upload-area', 'file-input', handleFileSelect);
     loadLayouts();
     
-    // Set default map title based on project name
+    // Set default area name based on project name
     document.getElementById('project-name').addEventListener('input', function() {
-        const mapTitle = document.getElementById('map-title');
-        if (!mapTitle.value) {
-            mapTitle.value = `Mapa de Localização - ${this.value}`;
+        const areaName = document.getElementById('area-name');
+        if (!areaName.value) {
+            // Extract area name from project name if it follows the pattern "Mapa de Localização - Area Name"
+            const projectName = this.value;
+            const match = projectName.match(/Mapa de Localização - (.+)/i);
+            if (match) {
+                areaName.value = match[1];
+            }
         }
     });
 });
@@ -182,58 +188,90 @@ function showFileInfo(fileData) {
     fileInfoDiv.classList.remove('d-none');
 }
 
-// Layout loading and selection
+// Map types and layout loading
 async function loadLayouts() {
     try {
-        const layouts = await GISSaaS.getLayouts('location');
-        displayLayouts(layouts);
+        displayMapTypes();
+        setupLayoutStyleListeners();
     } catch (error) {
         console.error('Error loading layouts:', error);
-        GISSaaS.showAlert('Erro ao carregar layouts', 'danger');
+        GISSaaS.showAlert('Erro ao carregar tipos de mapa', 'danger');
     }
 }
 
-function displayLayouts(layouts) {
-    const container = document.getElementById('layout-options');
+function displayMapTypes() {
+    const container = document.getElementById('map-type-options');
     
-    if (!layouts || layouts.length === 0) {
-        container.innerHTML = `
-            <div class="col-12">
-                <div class="alert alert-warning">
-                    Nenhum layout disponível no momento.
-                </div>
-            </div>
-        `;
-        return;
-    }
+    // Definir tipos de mapa - apenas Localização habilitado
+    const mapTypes = [
+        {
+            id: 'location',
+            name: 'Mapa de Localização',
+            description: 'Layout padrão para mapas de localização',
+            icon: 'fas fa-map-marker-alt',
+            enabled: true
+        },
+        {
+            id: 'hydrographic',
+            name: 'Mapa Hidrográfico Básico',
+            description: 'Layout para mapas hidrográficos',
+            icon: 'fas fa-water',
+            enabled: false
+        },
+        {
+            id: 'hypsometric',
+            name: 'Mapa Hipsométrico Padrão',
+            description: 'Layout para mapas hipsométricos',
+            icon: 'fas fa-mountain',
+            enabled: false
+        },
+        {
+            id: 'relief',
+            name: 'Mapa de Relevo Simples',
+            description: 'Layout básico para mapas de relevo',
+            icon: 'fas fa-chart-area',
+            enabled: false
+        }
+    ];
     
-    container.innerHTML = layouts.map(layout => `
+    container.innerHTML = mapTypes.map(mapType => `
         <div class="col-md-6 mb-3">
-            <div class="layout-option">
-                <input type="radio" name="layout" value="${layout.id}" id="layout-${layout.id}">
-                <label for="layout-${layout.id}" class="layout-card">
-                    <div class="layout-icon">
-                        <i class="fas fa-map"></i>
+            <div class="novo_projeto-layout-option">
+                <input type="radio" name="map-type" value="${mapType.id}" id="map-${mapType.id}" 
+                       ${mapType.enabled ? '' : 'disabled'} ${mapType.id === 'location' ? 'checked' : ''}>
+                <label for="map-${mapType.id}" class="novo_projeto-layout-card ${mapType.enabled ? '' : 'disabled'}">
+                    <div class="novo_projeto-layout-icon">
+                        <i class="${mapType.icon}"></i>
                     </div>
-                    <h5>${layout.name}</h5>
-                    <p class="text-muted">${layout.description}</p>
+                    <h6>${mapType.name}</h6>
+                    <p class="text-muted">${mapType.enabled ? mapType.description : 'Em Breve'}</p>
+                    ${!mapType.enabled ? '<div class="coming-soon-badge">Em Breve</div>' : ''}
                 </label>
             </div>
         </div>
     `).join('');
     
-    // Select first layout by default
-    if (layouts.length > 0) {
-        document.getElementById(`layout-${layouts[0].id}`).checked = true;
-        selectedLayout = layouts[0];
-    }
+    // Selecionar o tipo de mapa padrão
+    selectedMapType = 'location';
     
-    // Add change listeners
-    document.querySelectorAll('input[name="layout"]').forEach(radio => {
+    // Add change listeners para tipos de mapa habilitados
+    document.querySelectorAll('input[name="map-type"]:not([disabled])').forEach(radio => {
         radio.addEventListener('change', function() {
-            selectedLayout = layouts.find(l => l.id === this.value);
+            selectedMapType = this.value;
         });
     });
+}
+
+function setupLayoutStyleListeners() {
+    // Configurar listeners para estilos de layout
+    document.querySelectorAll('input[name="layout-style"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            selectedLayoutStyle = this.value;
+        });
+    });
+    
+    // Definir estilo padrão
+    selectedLayoutStyle = 'classic';
 }
 
 // Project creation
@@ -247,26 +285,17 @@ async function createProject() {
         // Prepare configuration data
         const configData = {
             project: projectData.id,
-            layout: selectedLayout.id,
-            title: document.getElementById('map-title').value.trim(),
-            subtitle: document.getElementById('map-subtitle').value.trim(),
-            primary_color: document.getElementById('primary-color').value,
-            secondary_color: document.getElementById('secondary-color').value,
-            show_scale: document.getElementById('show-scale').checked,
-            show_north_arrow: document.getElementById('show-north').checked,
-            show_legend: document.getElementById('show-legend').checked,
-            additional_info: document.getElementById('additional-info').value.trim()
+            map_type: selectedMapType,
+            layout_style: selectedLayoutStyle,
+            title: 'Mapa de Localização', // Título fixo
+            subtitle: document.getElementById('area-name').value.trim(),
+            show_scale: true, // Valores padrão
+            show_north_arrow: true,
+            show_legend: true
         };
         
         // Save configuration
         await GISSaaS.saveMapConfiguration(configData);
-        
-        // Handle logo upload if present
-        const logoFile = document.getElementById('logo-upload').files[0];
-        if (logoFile) {
-            // TODO: Implement logo upload
-            console.log('Logo upload not implemented yet');
-        }
         
         GISSaaS.showAlert('Projeto criado com sucesso!', 'success');
         
@@ -283,38 +312,23 @@ async function createProject() {
 }
 
 function validateConfigForm() {
-    const title = document.getElementById('map-title').value.trim();
+    const areaName = document.getElementById('area-name').value.trim();
     
-    if (!title) {
-        GISSaaS.showAlert('Por favor, informe o título do mapa.', 'danger');
-        document.getElementById('map-title').focus();
+    if (!areaName) {
+        GISSaaS.showAlert('Por favor, informe o nome da área/imóvel.', 'danger');
+        document.getElementById('area-name').focus();
         return false;
     }
     
-    if (!selectedLayout) {
-        GISSaaS.showAlert('Por favor, selecione um layout.', 'danger');
+    if (!selectedMapType) {
+        GISSaaS.showAlert('Por favor, selecione um tipo de mapa.', 'danger');
+        return false;
+    }
+    
+    if (!selectedLayoutStyle) {
+        GISSaaS.showAlert('Por favor, selecione um estilo de layout.', 'danger');
         return false;
     }
     
     return true;
 }
-
-// Color picker preview
-document.addEventListener('DOMContentLoaded', function() {
-    const primaryColor = document.getElementById('primary-color');
-    const secondaryColor = document.getElementById('secondary-color');
-    
-    if (primaryColor) {
-        primaryColor.addEventListener('change', updateColorPreview);
-    }
-    
-    if (secondaryColor) {
-        secondaryColor.addEventListener('change', updateColorPreview);
-    }
-});
-
-function updateColorPreview() {
-    // TODO: Implement live color preview
-    console.log('Color preview update not implemented yet');
-}
-

@@ -136,6 +136,26 @@
     font-size: 0.95rem;
 }
 
+/* Campos específicos com tamanhos aumentados - com prioridade sobre Bootstrap */
+#project-name.novo_projeto-form-control {
+    min-height: 56px !important;
+    padding: 1rem 1.25rem !important;
+    font-size: 1rem !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+#project-description.novo_projeto-form-control {
+    min-height: 56px !important;
+    padding: 1rem 1.25rem !important;
+    font-size: 1rem !important;
+    resize: vertical !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
 .novo_projeto-form-control:focus {
     border-color: var(--geo-primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
@@ -267,6 +287,53 @@
     color: #6B7280;
     font-size: 0.9rem;
     margin: 0;
+}
+
+/* Estilos para cards desabilitados */
+.novo_projeto-layout-card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #F3F4F6;
+    border-color: #E5E7EB;
+    position: relative;
+}
+
+.novo_projeto-layout-card.disabled:hover {
+    border-color: #E5E7EB;
+    box-shadow: none;
+    transform: none;
+}
+
+.novo_projeto-layout-card.disabled .novo_projeto-layout-icon {
+    color: #9CA3AF;
+}
+
+.novo_projeto-layout-card.disabled:hover .novo_projeto-layout-icon {
+    color: #9CA3AF;
+    transform: none;
+}
+
+.novo_projeto-layout-card.disabled h6 {
+    color: #9CA3AF;
+}
+
+.novo_projeto-layout-card.disabled p {
+    color: #9CA3AF;
+}
+
+/* Badge "Em Breve" */
+.coming-soon-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, var(--geo-highlight) 0%, #F97316 100%);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow-soft);
+    z-index: 2;
 }
 
 /* Seletor de cores */

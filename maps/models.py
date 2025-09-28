@@ -41,9 +41,6 @@ class UploadedGISFile(models.Model):
     FILE_TYPES = [
         ('shp', 'Shapefile'),
         ('kml', 'KML'),
-        ('kmz', 'KMZ'),
-        ('geojson', 'GeoJSON'),
-        ('gpx', 'GPX'),
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -57,7 +57,7 @@ class FileUploadSerializer(serializers.Serializer):
     def validate_file(self, value):
         """Validar o arquivo enviado"""
         # Verificar extensão do arquivo
-        allowed_extensions = ['.shp', '.kml', '.kmz', '.geojson', '.gpx', '.zip']
+        allowed_extensions = ['.kml', '.zip']
         file_extension = '.' + value.name.split('.')[-1].lower()
         
         if file_extension not in allowed_extensions:

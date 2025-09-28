@@ -23,11 +23,7 @@ class GISFileProcessor:
         """Detectar o tipo de arquivo baseado na extensão"""
         extension = filename.lower().split('.')[-1]
         type_mapping = {
-            'shp': 'shp',
             'kml': 'kml',
-            'kmz': 'kmz',
-            'geojson': 'geojson',
-            'gpx': 'gpx',
             'zip': 'shp'  # Arquivos ZIP são tratados como Shapefiles
         }
         return type_mapping.get(extension, 'unknown')

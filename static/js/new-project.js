@@ -108,7 +108,7 @@ function handleFileSelect(file) {
 }
 
 function validateFile(file) {
-    const allowedExtensions = ['shp', 'kml', 'kmz', 'geojson', 'gpx', 'zip'];
+    const allowedExtensions = ['kml', 'zip'];
     const maxSize = 50 * 1024 * 1024; // 50MB
     
     const extension = file.name.split('.').pop().toLowerCase();

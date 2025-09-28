@@ -265,57 +265,101 @@
 
 <!-- Generate Map Modal -->
 <div class="modal fade projeto_detalhes-modal" id="generateMapModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Gerar Mapa</h5>
+                <h5 class="modal-title"><i class="fas fa-map me-2"></i>Gerar Mapa</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Escolha o estilo e formato de saída para o mapa:</p>
-                <div class="d-grid gap-3">
-                    <div class="card border-warning projeto_detalhes-card-vibrante">
-                        <div class="card-header text-white">
-                            <h6 class="mb-0"><i class="fas fa-palette me-2"></i>Design Vibrante (Novo!)</h6>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">Mapa com cores vivas e vibrantes, alto contraste, fundo OpenStreetMap original e elementos visuais impactantes.</p>
-                            <button class="btn w-100 text-white" style="background: linear-gradient(45deg, #FF6B35, #FF1744);" onclick="generateVividMap('png')">
-                                <i class="fas fa-fire me-2"></i>Gerar Mapa Vibrante PNG
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="card border-primary projeto_detalhes-card-moderno">
-                        <div class="card-header text-white">
-                            <h6 class="mb-0"><i class="fas fa-star me-2"></i>Design Moderno</h6>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">Mapa com design profissional, tipografia moderna, cores elegantes e elementos visuais aprimorados.</p>
-                            <button class="btn btn-primary w-100" onclick="generateModernMap('png')">
-                                <i class="fas fa-magic me-2"></i>Gerar Mapa Moderno PNG
-                            </button>
+                <p class="mb-4">Escolha o estilo de layout para o seu mapa:</p>
+                
+                <!-- Layout Style Selection -->
+                <div class="row" id="modal-layout-style-options">
+                    <div class="col-md-4 mb-3">
+                        <div class="projeto_detalhes-layout-option">
+                            <input type="radio" name="modal-layout-style" value="classic" id="modal-style-classic" checked>
+                            <label for="modal-style-classic" class="projeto_detalhes-layout-card">
+                                <div class="projeto_detalhes-layout-preview">
+                                    <img src="{% static 'images/padrao.png' %}" alt="Padrão" class="projeto_detalhes-layout-image">
+                                </div>
+                                <h6>Padrão</h6>
+                                <p class="text-muted">Layout tradicional e elegante</p>
+                                <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-2" onclick="generateMap('png')">
+                                    <i class="fas fa-image me-1"></i>Gerar PNG
+                                </button>
+                            </label>
                         </div>
                     </div>
-                    
-                    <div class="card border-secondary projeto_detalhes-card-classico">
-                        <div class="card-header text-white">
-                            <h6 class="mb-0"><i class="fas fa-map me-2"></i>Design Clássico</h6>
+                    <div class="col-md-4 mb-3">
+                        <div class="projeto_detalhes-layout-option">
+                            <input type="radio" name="modal-layout-style" value="modern" id="modal-style-modern">
+                            <label for="modal-style-modern" class="projeto_detalhes-layout-card">
+                                <div class="projeto_detalhes-layout-preview">
+                                    <img src="{% static 'images/minimalista.png' %}" alt="Minimalista" class="projeto_detalhes-layout-image">
+                                </div>
+                                <h6>Minimalista</h6>
+                                <p class="text-muted">Design contemporâneo e limpo</p>
+                                <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-2" onclick="generateModernMap('png')">
+                                    <i class="fas fa-magic me-1"></i>Gerar PNG
+                                </button>
+                            </label>
                         </div>
-                        <div class="card-body">
-                            <p class="card-text">Mapa com layout tradicional e elementos cartográficos padrão.</p>
-                            <button class="btn btn-secondary w-100" onclick="generateMap('png')">
-                                <i class="fas fa-image me-2"></i>Gerar Mapa Clássico PNG
-                            </button>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="projeto_detalhes-layout-option">
+                            <input type="radio" name="modal-layout-style" value="vibrant" id="modal-style-vibrant">
+                            <label for="modal-style-vibrant" class="projeto_detalhes-layout-card">
+                                <div class="projeto_detalhes-layout-preview">
+                                    <img src="{% static 'images/moderno.png' %}" alt="Moderno" class="projeto_detalhes-layout-image">
+                                </div>
+                                <h6>Moderno</h6>
+                                <p class="text-muted">Cores vivas e impactantes</p>
+                                <button type="button" class="btn btn-outline-warning btn-sm w-100 mt-2" onclick="generateVividMap('png')">
+                                    <i class="fas fa-fire me-1"></i>Gerar PNG
+                                </button>
+                            </label>
                         </div>
                     </div>
                 </div>
                 
-                <div class="mt-3">
+                <div class="mt-4 pt-3 border-top">
                     <small class="text-muted">
                         <i class="fas fa-info-circle me-1"></i>
-                        Ambos os formatos geram imagens de alta qualidade (300 DPI) ideais para apresentações e impressão.
+                        Todos os formatos geram imagens de alta qualidade (300 DPI) ideais para apresentações e impressão.
                     </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Carregamento -->
+<div class="modal fade" id="processing-modal" tabindex="-1" aria-labelledby="processingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content projeto_detalhes-modal-processing">
+            <div class="modal-body text-center p-5">
+                <div class="projeto_detalhes-processing-animation mb-4">
+                    <div class="projeto_detalhes-spinner"></div>
+                    <div class="projeto_detalhes-map-icon">
+                        <i class="fas fa-map"></i>
+                    </div>
+                </div>
+                <h4 class="mb-3">Gerando seu mapa...</h4>
+                <p class="text-muted mb-4">Processando dados geográficos e aplicando o estilo selecionado</p>
+                <div class="projeto_detalhes-progress-steps">
+                    <div class="projeto_detalhes-step-item active" id="process-step-1">
+                        <div class="projeto_detalhes-step-dot"></div>
+                        <span>Analisando dados</span>
+                    </div>
+                    <div class="projeto_detalhes-step-item" id="process-step-2">
+                        <div class="projeto_detalhes-step-dot"></div>
+                        <span>Aplicando estilo</span>
+                    </div>
+                    <div class="projeto_detalhes-step-item" id="process-step-3">
+                        <div class="projeto_detalhes-step-dot"></div>
+                        <span>Finalizando mapa</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -332,16 +376,51 @@ function generateMapModal() {
     modal.show();
 }
 
+function showProcessingModal() {
+    const processingModal = new bootstrap.Modal(document.getElementById('processing-modal'));
+    processingModal.show();
+    
+    // Simular progresso dos steps
+    setTimeout(() => {
+        document.getElementById('process-step-1').classList.remove('active');
+        document.getElementById('process-step-1').classList.add('completed');
+        document.getElementById('process-step-2').classList.add('active');
+    }, 1000);
+    
+    setTimeout(() => {
+        document.getElementById('process-step-2').classList.remove('active');
+        document.getElementById('process-step-2').classList.add('completed');
+        document.getElementById('process-step-3').classList.add('active');
+    }, 2000);
+}
+
+function hideProcessingModal() {
+    const processingModal = bootstrap.Modal.getInstance(document.getElementById('processing-modal'));
+    if (processingModal) {
+        processingModal.hide();
+    }
+    
+    // Reset steps
+    document.getElementById('process-step-1').classList.add('active');
+    document.getElementById('process-step-1').classList.remove('completed');
+    document.getElementById('process-step-2').classList.remove('active', 'completed');
+    document.getElementById('process-step-3').classList.remove('active', 'completed');
+}
+
 async function generateMap(format) {
     try {
         const modal = bootstrap.Modal.getInstance(document.getElementById('generateMapModal'));
         modal.hide();
         
-        GISSaaS.showAlert(`Gerando mapa clássico ${format.toUpperCase()}... Isso pode levar alguns minutos.`, 'info');
+        // Mostrar modal de carregamento
+        showProcessingModal();
         
         const result = await GISSaaS.generateMap(projectId, format);
         
-        GISSaaS.showAlert('Mapa clássico gerado com sucesso!', 'success');
+        // Esconder modal de carregamento
+        hideProcessingModal();
+        
+        GISSaaS.showAlert('Mapa padrão gerado com sucesso!', 'success');
         
         // Recarregar página para mostrar novo mapa
         setTimeout(() => {
@@ -350,6 +429,7 @@ async function generateMap(format) {
         
     } catch (error) {
         console.error('Error generating map:', error);
+        hideProcessingModal();
         GISSaaS.showAlert(`Erro ao gerar mapa: ${error.message}`, 'danger');
     }
 }
@@ -359,9 +439,40 @@ async function generateModernMap(format) {
         const modal = bootstrap.Modal.getInstance(document.getElementById('generateMapModal'));
         modal.hide();
         
-        GISSaaS.showAlert(`Gerando mapa moderno ${format.toUpperCase()}... Isso pode levar alguns minutos.`, 'info');
+        // Mostrar modal de carregamento
+        showProcessingModal();
         
         const result = await GISSaaS.generateModernMap(projectId, format);
+        
+        // Esconder modal de carregamento
+        hideProcessingModal();
+        
+        GISSaaS.showAlert('Mapa minimalista gerado com sucesso!', 'success');
+        
+        // Recarregar página para mostrar novo mapa
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error generating modern map:', error);
+        hideProcessingModal();
+        GISSaaS.showAlert(`Erro ao gerar mapa minimalista: ${error.message}`, 'danger');
+    }
+}
+
+async function generateVividMap(format) {
+    try {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('generateMapModal'));
+        modal.hide();
+        
+        // Mostrar modal de carregamento
+        showProcessingModal();
+        
+        const result = await GISSaaS.generateVividMap(projectId, format);
+        
+        // Esconder modal de carregamento
+        hideProcessingModal();
         
         GISSaaS.showAlert('Mapa moderno gerado com sucesso!', 'success');
         
@@ -371,30 +482,9 @@ async function generateModernMap(format) {
         }, 2000);
         
     } catch (error) {
-        console.error('Error generating modern map:', error);
-        GISSaaS.showAlert(`Erro ao gerar mapa moderno: ${error.message}`, 'danger');
-    }
-}
-
-async function generateVividMap(format) {
-    try {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('generateMapModal'));
-        modal.hide();
-        
-        GISSaaS.showAlert(`Gerando mapa vibrante ${format.toUpperCase()}... Isso pode levar alguns minutos.`, 'info');
-        
-        const result = await GISSaaS.generateVividMap(projectId, format);
-        
-        GISSaaS.showAlert('Mapa vibrante gerado com sucesso!', 'success');
-        
-        // Recarregar página para mostrar novo mapa
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (error) {
         console.error('Error generating vivid map:', error);
-        GISSaaS.showAlert(`Erro ao gerar mapa vibrante: ${error.message}`, 'danger');
+        hideProcessingModal();
+        GISSaaS.showAlert(`Erro ao gerar mapa moderno: ${error.message}`, 'danger');
     }
 }
 

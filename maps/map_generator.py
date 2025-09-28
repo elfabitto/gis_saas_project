@@ -78,7 +78,7 @@ class MapGenerator:
         
         # Ajustar zoom do mapa principal - garantir que toda área KML apareça
         bounds = gdf_web.total_bounds
-        margin = 5000  # margem maior para garantir que toda área apareça
+        margin = 3000  # Ajustado para consistência com outros estilos
         
         # Calcular o centro do mapa
         center_x = (bounds[0] + bounds[2]) / 2
@@ -271,8 +271,9 @@ class MapGenerator:
                         transform=ax_info.transAxes)
         ax_info.add_patch(rect)
         
-        # Texto da legenda
-        ax_info.text(0.18, legend_item_y, 'Área do Projeto', fontsize=10, 
+        # Texto da legenda - usar nome da área/imóvel ou fallback
+        legend_text = self.config.title if self.config.title else 'Área de Interesse'
+        ax_info.text(0.18, legend_item_y, legend_text, fontsize=10, 
                     transform=ax_info.transAxes, verticalalignment='center')
         
         # Adicionar informações cartográficas
@@ -296,10 +297,11 @@ class MapGenerator:
         
         # Informações cartográficas com escala calculada
         info_lines = [
-            'Sistema de Coordenadas Geográficas',
-            'Datum: SIRGAS 2000',
-            f'Escala Numérica: {real_scale}',
-            f'Data: {pd.Timestamp.now().strftime("%d/%m/%Y")}'
+            '• Sistema de Coordenadas Geográficas',
+            '• Datum: SIRGAS 2000 (EPSG:4326)',
+            '• Projeção: Web Mercator (EPSG:3857)',
+            f'• Escala Numérica: {real_scale}',
+            f'• Data de Geração: {pd.Timestamp.now().strftime("%d/%m/%Y")}'
         ]
         
         line_height = 0.06  # Reduzir espaçamento entre linhas
@@ -398,19 +400,19 @@ class MapGenerator:
         draw.text((combined_width // 2, title_y), title_text, 
                  fill='#1A1A1A', font=title_font, anchor='mm')
         
-        # Subtítulo com nome do projeto
-        if self.project.name:
+        # Subtítulo com nome da área/imóvel
+        if self.config.subtitle:
             subtitle_y = title_y + 80
-            project_name = self.project.name.upper()
-            if len(project_name) > 40:
-                project_name = project_name[:37] + "..."
+            area_name = self.config.subtitle.upper()
+            if len(area_name) > 40:
+                area_name = area_name[:37] + "..."
             
             # Sombra sutil do subtítulo
-            draw.text((combined_width // 2 + 1, subtitle_y + 1), project_name,
+            draw.text((combined_width // 2 + 1, subtitle_y + 1), area_name,
                      fill='#E5E7EB', font=subtitle_font, anchor='mm')
             
             # Subtítulo principal
-            draw.text((combined_width // 2, subtitle_y), project_name,
+            draw.text((combined_width // 2, subtitle_y), area_name,
                      fill='#2E2E2E', 
                      font=subtitle_font, anchor='mm')
         
@@ -439,7 +441,7 @@ class MapGenerator:
         try:
             # Obter bounds do mapa principal
             bounds = gdf_web.total_bounds
-            margin = 5000  # Mesmo margin usado no mapa principal
+            margin = 3000  # Mesmo margin usado no mapa principal
             
             # Calcular largura real em metros (Web Mercator)
             map_width_meters = (bounds[2] - bounds[0]) + (2 * margin)

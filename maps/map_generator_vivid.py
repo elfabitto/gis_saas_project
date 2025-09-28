@@ -293,8 +293,9 @@ class VividMapGenerator:
                                     transform=ax_info.transAxes)
         ax_info.add_patch(legend_rect)
         
-        # Nome da área de interesse na legenda
-        ax_info.text(0.28, legend_y, "Área de Interesse", 
+        # Nome da área/imóvel na legenda
+        legend_text = self.config.subtitle if self.config.subtitle else "Área de Interesse"
+        ax_info.text(0.28, legend_y, legend_text, 
                     fontsize=self.typography['body_size'],
                     color=self.color_palette['text_primary'],
                     weight='bold',
@@ -530,19 +531,19 @@ class VividMapGenerator:
         draw.text((width // 2, title_y), title_text, 
                  fill=self.color_palette['text_primary'], font=title_font, anchor='mm')
         
-        # Subtítulo com nome do projeto
-        if self.project.name:
+        # Subtítulo com nome da área/imóvel
+        if self.config.subtitle:
             subtitle_y = title_y + 80
-            project_name = self.project.name.upper()
-            if len(project_name) > 40:
-                project_name = project_name[:37] + "..."
+            area_name = self.config.subtitle.upper()
+            if len(area_name) > 40:
+                area_name = area_name[:37] + "..."
             
             # Sombra sutil do subtítulo
-            draw.text((width // 2 + 1, subtitle_y + 1), project_name,
+            draw.text((width // 2 + 1, subtitle_y + 1), area_name,
                      fill=self.color_palette['border'], font=subtitle_font, anchor='mm')
             
             # Subtítulo principal
-            draw.text((width // 2, subtitle_y), project_name,
+            draw.text((width // 2, subtitle_y), area_name,
                      fill=self.color_palette['text_secondary'], 
                      font=subtitle_font, anchor='mm')
     

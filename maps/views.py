@@ -27,7 +27,18 @@ class GISProjectViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Por enquanto, retorna todos os projetos
         # Em produção, filtrar por usuário autenticado
-        return GISProject.objects.all()
+        queryset = GISProject.objects.all().order_by('-created_at')
+        
+        # Aplicar limite se fornecido
+        limit = self.request.query_params.get('limit')
+        if limit:
+            try:
+                limit = int(limit)
+                queryset = queryset[:limit]
+            except ValueError:
+                pass
+        
+        return queryset
     
     def perform_create(self, serializer):
         # Por enquanto, usar o primeiro usuário disponível

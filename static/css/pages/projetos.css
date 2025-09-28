@@ -484,6 +484,65 @@
     }
 }
 
+/* Estilos dos cards da home para manter consistência visual */
+.home_project-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.2s ease;
+    margin-bottom: 1.5rem;
+    border: 1px solid #E5E7EB;
+    height: 100%;
+}
+
+.home_project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+    border-color: var(--geo-primary);
+}
+
+.home_project-card h5 {
+    color: var(--geo-dark);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.home_btn-primary {
+    background: var(--geo-primary);
+    border: none;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    color: white;
+    box-shadow: var(--shadow-soft);
+    text-decoration: none;
+}
+
+.home_btn-primary:hover {
+    background: var(--geo-secondary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+    color: white;
+    text-decoration: none;
+}
+
+.project-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.project-status.status-active {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16A34A;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
 /* Efeitos de hover aprimorados */
 .projetos-card::before {
     content: '';

@@ -12,14 +12,18 @@ class UserSerializer(serializers.ModelSerializer):
 class GISProjectSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     uploaded_files_count = serializers.SerializerMethodField()
+    generated_maps_count = serializers.SerializerMethodField()
     
     class Meta:
         model = GISProject
-        fields = ['id', 'user', 'name', 'description', 'created_at', 'updated_at', 'uploaded_files_count']
+        fields = ['id', 'user', 'name', 'description', 'created_at', 'updated_at', 'uploaded_files_count', 'generated_maps_count']
         read_only_fields = ['id', 'created_at', 'updated_at']
     
     def get_uploaded_files_count(self, obj):
         return obj.uploaded_files.count()
+    
+    def get_generated_maps_count(self, obj):
+        return obj.generated_maps.filter(status='completed').count()
 
 
 class UploadedGISFileSerializer(serializers.ModelSerializer):

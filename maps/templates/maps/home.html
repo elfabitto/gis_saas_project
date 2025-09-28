@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadRecentProjects() {
     try {
-        const response = await axios.get('/api/projects/?limit=3');
+        const response = await axios.get('/api/projects/?limit=6');
         const projects = response.data.results || response.data;
         
         const container = document.getElementById('recent-projects');
@@ -182,7 +182,7 @@ async function loadRecentProjects() {
                             ${new Date(project.created_at).toLocaleDateString('pt-BR')}
                         </small>
                         <span class="project-status status-active">
-                            ${project.uploaded_files_count} arquivo(s)
+                            ${project.generated_maps_count} mapa(s)
                         </span>
                     </div>
                     <div class="mt-3">

@@ -553,7 +553,13 @@ class VividMapGenerator:
         
         for gis_file in self.gis_files:
             try:
-                gdf = gpd.read_file(gis_file.file.path)
+                # Usar nossa função que trata arquivos ZIP
+                from .utils import GISFileProcessor
+                gdf = GISFileProcessor.read_gis_file(
+                    gis_file.file.path, 
+                    gis_file.file_type, 
+                    gis_file.original_filename
+                )
                 if gdf.crs != 'EPSG:4326':
                     gdf = gdf.to_crs('EPSG:4326')
                 gdfs.append(gdf)

@@ -476,11 +476,18 @@ class MapGenerator:
     
     def _load_project_data(self) -> gpd.GeoDataFrame:
         """Carregar e combinar dados GIS do projeto"""
+        from .utils import GISFileProcessor
+        
         gdfs = []
         
         for gis_file in self.gis_files:
             try:
-                gdf = gpd.read_file(gis_file.file.path)
+                # Usar nossa função que trata arquivos ZIP
+                gdf = GISFileProcessor.read_gis_file(
+                    gis_file.file.path, 
+                    gis_file.file_type, 
+                    gis_file.original_filename
+                )
                 # Reprojetar para WGS84 se necessário
                 if gdf.crs != 'EPSG:4326':
                     gdf = gdf.to_crs('EPSG:4326')

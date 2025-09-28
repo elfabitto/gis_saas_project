@@ -7,6 +7,10 @@ from shapely.geometry import Point, Polygon, MultiPolygon
 from django.core.files.base import ContentFile
 from django.conf import settings
 import logging
+import shutil
+
+# Configurar opções do GDAL para Shapefiles
+os.environ['SHAPE_RESTORE_SHX'] = 'YES'
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +27,8 @@ class GISFileProcessor:
             'kml': 'kml',
             'kmz': 'kmz',
             'geojson': 'geojson',
-            'gpx': 'gpx'
+            'gpx': 'gpx',
+            'zip': 'shp'  # Arquivos ZIP são tratados como Shapefiles
         }
         return type_mapping.get(extension, 'unknown')
     
@@ -47,6 +52,61 @@ class GISFileProcessor:
             raise
     
     @staticmethod
+    def extract_shapefile_from_zip(zip_file_path):
+        """Extrair componentes do Shapefile de um arquivo ZIP"""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+                zip_ref.extractall(temp_dir)
+            
+            # Procurar por arquivo .shp no diretório extraído
+            shp_file = None
+            shapefile_components = {}
+            
+            for root, dirs, files in os.walk(temp_dir):
+                for file in files:
+                    file_lower = file.lower()
+                    file_path = os.path.join(root, file)
+                    
+                    if file_lower.endswith('.shp'):
+                        shp_file = file_path
+                        base_name = file[:-4]  # Remove .shp
+                        shapefile_components['shp'] = file_path
+                    elif file_lower.endswith('.shx'):
+                        shapefile_components['shx'] = file_path
+                    elif file_lower.endswith('.dbf'):
+                        shapefile_components['dbf'] = file_path
+                    elif file_lower.endswith('.prj'):
+                        shapefile_components['prj'] = file_path
+                    elif file_lower.endswith('.cpg'):
+                        shapefile_components['cpg'] = file_path
+            
+            if not shp_file:
+                raise ValueError("Nenhum arquivo .shp encontrado no ZIP")
+            
+            # Verificar se temos pelo menos os componentes essenciais
+            required_components = ['shp']
+            missing_components = []
+            
+            for component in required_components:
+                if component not in shapefile_components:
+                    missing_components.append(component)
+            
+            if missing_components:
+                raise ValueError(f"Componentes obrigatórios do Shapefile não encontrados: {missing_components}")
+            
+            logger.info(f"Componentes do Shapefile encontrados: {list(shapefile_components.keys())}")
+            
+            return shp_file, temp_dir
+            
+        except Exception as e:
+            logger.error(f"Erro ao extrair Shapefile do ZIP: {str(e)}")
+            # Limpar diretório temporário em caso de erro
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir, ignore_errors=True)
+            raise
+    
+    @staticmethod
     def process_shapefile_components(uploaded_file, project_dir):
         """Processar componentes do Shapefile (shp, shx, dbf, prj)"""
         # Para Shapefile, precisamos de múltiplos arquivos
@@ -55,22 +115,86 @@ class GISFileProcessor:
         return uploaded_file.temporary_file_path()
     
     @staticmethod
-    def read_gis_file(file_path, file_type):
+    def read_gis_file(file_path, file_type, original_filename=None):
         """Ler arquivo GIS e retornar GeoDataFrame"""
+        logger.info(f"=== read_gis_file INICIADO ===")
+        logger.info(f"file_path: {file_path}")
+        logger.info(f"file_type: {file_type}")
+        logger.info(f"original_filename: {original_filename}")
+        
+        temp_dir = None
         try:
+            # Verificar se é um arquivo ZIP pela extensão original
+            is_zip_file = False
+            if original_filename:
+                is_zip_file = original_filename.lower().endswith('.zip')
+            else:
+                is_zip_file = file_path.lower().endswith('.zip')
+            
+            logger.info(f"is_zip_file: {is_zip_file}")
+            
             if file_type == 'kmz':
+                logger.info("Processando arquivo KMZ...")
                 # Extrair KML do KMZ primeiro
                 kml_path = GISFileProcessor.extract_kmz(file_path)
+                logger.info(f"KML extraído para: {kml_path}")
                 gdf = gpd.read_file(kml_path)
+                logger.info("KMZ lido com sucesso")
+            elif file_type == 'shp' and is_zip_file:
+                logger.info("Processando arquivo ZIP com Shapefile...")
+                # Extrair Shapefile do ZIP
+                shp_path, temp_dir = GISFileProcessor.extract_shapefile_from_zip(file_path)
+                logger.info(f"Shapefile extraído para: {shp_path}")
+                logger.info(f"Diretório temporário: {temp_dir}")
+                
+                # Verificar se o arquivo .shp existe
+                if os.path.exists(shp_path):
+                    logger.info(f"Arquivo .shp existe: {shp_path}")
+                    logger.info(f"Tamanho do .shp: {os.path.getsize(shp_path)} bytes")
+                    
+                    # Listar todos os arquivos no diretório temporário
+                    logger.info("Arquivos no diretório temporário:")
+                    for root, dirs, files in os.walk(temp_dir):
+                        for file in files:
+                            full_path = os.path.join(root, file)
+                            logger.info(f"  - {file} ({os.path.getsize(full_path)} bytes)")
+                else:
+                    logger.error(f"Arquivo .shp não existe: {shp_path}")
+                
+                logger.info("Tentando ler Shapefile com geopandas...")
+                gdf = gpd.read_file(shp_path)
+                logger.info("Shapefile ZIP lido com sucesso")
             elif file_type in ['shp', 'kml', 'geojson', 'gpx']:
+                logger.info(f"Processando arquivo {file_type} diretamente...")
+                logger.info(f"Arquivo existe: {os.path.exists(file_path)}")
+                if os.path.exists(file_path):
+                    logger.info(f"Tamanho do arquivo: {os.path.getsize(file_path)} bytes")
+                
+                logger.info("Tentando ler arquivo com geopandas...")
                 gdf = gpd.read_file(file_path)
+                logger.info(f"Arquivo {file_type} lido com sucesso")
             else:
+                logger.error(f"Tipo de arquivo não suportado: {file_type}")
                 raise ValueError(f"Tipo de arquivo não suportado: {file_type}")
             
+            logger.info(f"GeoDataFrame criado com sucesso. Shape: {gdf.shape}")
+            logger.info(f"=== read_gis_file CONCLUÍDO ===")
             return gdf
         except Exception as e:
-            logger.error(f"Erro ao ler arquivo GIS: {str(e)}")
+            logger.error(f"ERRO em read_gis_file: {str(e)}")
+            logger.error(f"Tipo do erro: {type(e).__name__}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             raise
+        finally:
+            # Limpar diretório temporário se foi criado
+            if temp_dir and os.path.exists(temp_dir):
+                try:
+                    logger.info(f"Limpando diretório temporário: {temp_dir}")
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                    logger.info("Diretório temporário limpo com sucesso")
+                except Exception as cleanup_error:
+                    logger.warning(f"Erro ao limpar diretório temporário: {cleanup_error}")
     
     @staticmethod
     def extract_metadata(gdf):
@@ -210,23 +334,44 @@ def process_uploaded_gis_file(uploaded_file_instance):
     Returns:
         dict: Metadados extraídos do arquivo
     """
+    logger.info("=== INÍCIO DO PROCESSAMENTO ===")
     try:
         file_path = uploaded_file_instance.file.path
         file_type = uploaded_file_instance.file_type
+        original_filename = uploaded_file_instance.original_filename
+        
+        logger.info(f"Processando arquivo: {original_filename}")
+        logger.info(f"Caminho: {file_path}")
+        logger.info(f"Tipo detectado: {file_type}")
+        logger.info(f"Arquivo existe: {os.path.exists(file_path)}")
+        
+        if os.path.exists(file_path):
+            logger.info(f"Tamanho do arquivo no disco: {os.path.getsize(file_path)} bytes")
         
         # Ler arquivo GIS
-        gdf = GISFileProcessor.read_gis_file(file_path, file_type)
+        logger.info("Chamando GISFileProcessor.read_gis_file...")
+        gdf = GISFileProcessor.read_gis_file(file_path, file_type, original_filename)
+        logger.info(f"Arquivo lido com sucesso. Shape: {gdf.shape}")
+        logger.info(f"CRS inicial: {gdf.crs}")
+        logger.info(f"Colunas: {list(gdf.columns)}")
         
         # Validar geometrias
+        logger.info("Validando geometrias...")
         GISFileProcessor.validate_geometry(gdf)
+        logger.info("Geometrias validadas com sucesso")
         
         # Reprojetar para WGS84
+        logger.info("Reprojetando para WGS84...")
         gdf = GISFileProcessor.reproject_to_wgs84(gdf)
+        logger.info(f"CRS após reprojeção: {gdf.crs}")
         
         # Extrair metadados
+        logger.info("Extraindo metadados...")
         metadata = GISFileProcessor.extract_metadata(gdf)
+        logger.info(f"Metadados extraídos: {metadata}")
         
         # Atualizar instância do modelo com metadados
+        logger.info("Salvando metadados no banco...")
         uploaded_file_instance.geometry_type = metadata['geometry_type']
         uploaded_file_instance.coordinate_system = metadata['coordinate_system']
         uploaded_file_instance.bounds_north = metadata['bounds_north']
@@ -234,12 +379,15 @@ def process_uploaded_gis_file(uploaded_file_instance):
         uploaded_file_instance.bounds_east = metadata['bounds_east']
         uploaded_file_instance.bounds_west = metadata['bounds_west']
         uploaded_file_instance.save()
+        logger.info("Metadados salvos no banco com sucesso")
         
-        logger.info(f"Arquivo GIS processado com sucesso: {uploaded_file_instance.original_filename}")
+        logger.info(f"=== PROCESSAMENTO CONCLUÍDO: {uploaded_file_instance.original_filename} ===")
         
         return metadata
         
     except Exception as e:
-        logger.error(f"Erro ao processar arquivo GIS: {str(e)}")
+        logger.error(f"ERRO NO PROCESSAMENTO: {str(e)}")
+        logger.error(f"Tipo do erro: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback completo: {traceback.format_exc()}")
         raise
-

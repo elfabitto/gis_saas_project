@@ -89,19 +89,36 @@ class FileUploadView(viewsets.ViewSet):
     
     def create(self, request):
         """Upload de arquivo GIS"""
+        logger.info("=== INÍCIO DO UPLOAD ===")
+        logger.info(f"Request data keys: {list(request.data.keys())}")
+        logger.info(f"Request FILES: {list(request.FILES.keys())}")
+        
         try:
+            logger.info("Validando serializer...")
             serializer = FileUploadSerializer(data=request.data)
+            
             if serializer.is_valid():
+                logger.info("Serializer válido, extraindo dados...")
                 uploaded_file = serializer.validated_data['file']
                 project_id = serializer.validated_data['project_id']
                 
+                logger.info(f"Arquivo recebido: {uploaded_file.name}")
+                logger.info(f"Tamanho do arquivo: {uploaded_file.size} bytes")
+                logger.info(f"Content type: {uploaded_file.content_type}")
+                logger.info(f"Project ID: {project_id}")
+                
                 # Obter projeto
+                logger.info("Buscando projeto...")
                 project = get_object_or_404(GISProject, id=project_id)
+                logger.info(f"Projeto encontrado: {project.name}")
                 
                 # Detectar tipo de arquivo
+                logger.info("Detectando tipo de arquivo...")
                 file_type = GISFileProcessor.detect_file_type(uploaded_file.name)
+                logger.info(f"Tipo detectado: {file_type}")
                 
                 # Criar instância do arquivo
+                logger.info("Criando instância do arquivo no banco...")
                 gis_file = UploadedGISFile.objects.create(
                     project=project,
                     file=uploaded_file,
@@ -109,13 +126,19 @@ class FileUploadView(viewsets.ViewSet):
                     original_filename=uploaded_file.name,
                     file_size=uploaded_file.size
                 )
+                logger.info(f"Arquivo salvo com ID: {gis_file.id}")
+                logger.info(f"Caminho do arquivo: {gis_file.file.path}")
                 
                 # Processar arquivo em background (ou síncronamente para demo)
                 try:
+                    logger.info("Iniciando processamento do arquivo...")
                     metadata = process_uploaded_gis_file(gis_file)
-                    logger.info(f"Arquivo processado: {metadata}")
+                    logger.info(f"Arquivo processado com sucesso: {metadata}")
                 except Exception as e:
-                    logger.error(f"Erro ao processar arquivo: {str(e)}")
+                    logger.error(f"ERRO NO PROCESSAMENTO: {str(e)}")
+                    logger.error(f"Tipo do erro: {type(e).__name__}")
+                    import traceback
+                    logger.error(f"Traceback completo: {traceback.format_exc()}")
                     gis_file.delete()
                     return Response(
                         {'error': f'Erro ao processar arquivo: {str(e)}'},
@@ -123,13 +146,20 @@ class FileUploadView(viewsets.ViewSet):
                     )
                 
                 # Retornar dados do arquivo criado
+                logger.info("Criando resposta...")
                 response_serializer = UploadedGISFileSerializer(gis_file, context={'request': request})
+                logger.info("=== UPLOAD CONCLUÍDO COM SUCESSO ===")
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
             
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                logger.error(f"Serializer inválido: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
         except Exception as e:
-            logger.error(f"Erro no upload: {str(e)}")
+            logger.error(f"ERRO GERAL NO UPLOAD: {str(e)}")
+            logger.error(f"Tipo do erro: {type(e).__name__}")
+            import traceback
+            logger.error(f"Traceback completo: {traceback.format_exc()}")
             return Response(
                 {'error': f'Erro interno: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

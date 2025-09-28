@@ -819,3 +819,122 @@
     color: var(--geo-dark);
     font-size: 0.95rem;
 }
+
+/* Estilos para ações diretas dos mapas */
+.projeto_detalhes-map-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.projeto_detalhes-map-actions .btn {
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.projeto_detalhes-map-actions .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-soft);
+}
+
+.projeto_detalhes-map-actions .btn-outline-primary {
+    border-color: var(--geo-primary);
+    color: var(--geo-primary);
+}
+
+.projeto_detalhes-map-actions .btn-outline-primary:hover {
+    background: var(--geo-primary);
+    border-color: var(--geo-primary);
+    color: white;
+}
+
+.projeto_detalhes-map-actions .btn-outline-success {
+    border-color: #22C55E;
+    color: #22C55E;
+}
+
+.projeto_detalhes-map-actions .btn-outline-success:hover {
+    background: #22C55E;
+    border-color: #22C55E;
+    color: white;
+}
+
+.projeto_detalhes-map-actions .btn-outline-danger {
+    border-color: #EF4444;
+    color: #EF4444;
+}
+
+.projeto_detalhes-map-actions .btn-outline-danger:hover {
+    background: #EF4444;
+    border-color: #EF4444;
+    color: white;
+}
+
+/* Estilos para ações dos arquivos GIS */
+.projeto_detalhes-file-actions {
+    display: flex;
+    align-items: center;
+}
+
+.projeto_detalhes-file-actions .btn {
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.projeto_detalhes-file-actions .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-soft);
+}
+
+.projeto_detalhes-file-actions .btn-outline-success {
+    border-color: #22C55E;
+    color: #22C55E;
+}
+
+.projeto_detalhes-file-actions .btn-outline-success:hover {
+    background: #22C55E;
+    border-color: #22C55E;
+    color: white;
+}
+
+/* Responsividade para ações dos mapas */
+@media (max-width: 576px) {
+    .projeto_detalhes-map-actions {
+        justify-content: flex-end;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+    
+    .projeto_detalhes-file-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .projeto_detalhes-file-info {
+        margin-bottom: 0.5rem;
+    }
+    
+    .projeto_detalhes-file-actions {
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+    }
+}
